@@ -5,6 +5,7 @@ import { getUploadStatus, UploadRequestOptions, uploadDocuments } from '../lib/a
 export interface UploadedFile {
   id: string;
   file: File;
+  sizeBytes: number;
   uploadId?: string;
   documentId?: string;
   progress: number;
@@ -21,6 +22,7 @@ export function useUploadQueue() {
       const newFiles: UploadedFile[] = files.map((file) => ({
         id: createId(),
         file,
+        sizeBytes: Number.isFinite(file.size) ? file.size : 0,
         progress: 0,
         status: 'uploading',
         createdAt: new Date().toISOString(),
@@ -52,6 +54,7 @@ export function useUploadQueue() {
 
             return {
               ...currentFile,
+              sizeBytes: typeof upload.size === 'number' && upload.size > 0 ? upload.size : currentFile.sizeBytes,
               uploadId: upload.id,
               documentId: upload.documentId,
               progress: upload.progress,
@@ -102,6 +105,10 @@ export function useUploadQueue() {
                 currentFile.id === file.id
                   ? {
                       ...currentFile,
+                      sizeBytes:
+                        typeof status.size === 'number' && status.size > 0
+                          ? status.size
+                          : currentFile.sizeBytes,
                       documentId: status.documentId,
                       progress: status.progress,
                       status: status.status,

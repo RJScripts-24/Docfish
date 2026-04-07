@@ -1,10 +1,12 @@
 import { motion } from 'motion/react';
-import { Upload, File, X, Check, AlertCircle } from 'lucide-react';
+import { Upload, File as FileIcon, X, Check, AlertCircle } from 'lucide-react';
 import { useState, useCallback, DragEvent } from 'react';
+import { formatFileSize } from '../../../lib/format';
 
 interface UploadedFile {
   id: string;
-  file: File;
+  file: globalThis.File;
+  sizeBytes?: number;
   progress: number;
   status: 'uploading' | 'uploaded' | 'processing' | 'done' | 'error';
   errorMessage?: string;
@@ -12,7 +14,7 @@ interface UploadedFile {
 }
 
 interface UploadZoneProps {
-  onFilesAdded: (files: File[]) => void;
+  onFilesAdded: (files: globalThis.File[]) => void;
 }
 
 export function UploadZone({ onFilesAdded }: UploadZoneProps) {
@@ -177,7 +179,7 @@ export function FileListItem({ file, onRemove }: FileListItemProps) {
     >
       {/* File Icon */}
       <div className="w-12 h-12 bg-gradient-to-br from-blue-100 to-blue-200 rounded-xl flex items-center justify-center flex-shrink-0">
-        <File className="w-6 h-6 text-blue-600" />
+        <FileIcon className="w-6 h-6 text-blue-600" />
       </div>
 
       {/* File Info */}
@@ -186,7 +188,7 @@ export function FileListItem({ file, onRemove }: FileListItemProps) {
           <div>
             <p className="font-medium text-gray-900 truncate">{file.file.name}</p>
             <p className="text-xs text-gray-500">
-              {(file.file.size / 1024 / 1024).toFixed(2)} MB
+              {formatFileSize(file.sizeBytes ?? file.file.size)}
             </p>
           </div>
           <div className="flex items-center gap-3">

@@ -12,6 +12,24 @@ export function formatCurrency(value: number | null | undefined, currency = 'USD
   }).format(value);
 }
 
+export function formatFileSize(value: number | null | undefined): string {
+  const bytes = typeof value === 'number' && Number.isFinite(value) && value >= 0 ? value : 0;
+
+  if (bytes < 1024) {
+    return `${bytes} B`;
+  }
+
+  if (bytes < 1024 * 1024) {
+    return `${(bytes / 1024).toFixed(1)} KB`;
+  }
+
+  if (bytes < 1024 * 1024 * 1024) {
+    return `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
+  }
+
+  return `${(bytes / (1024 * 1024 * 1024)).toFixed(2)} GB`;
+}
+
 export function formatDate(value: string | null | undefined): string {
   if (!value) {
     return '-';

@@ -9,32 +9,66 @@ export default function AuthCallbackPage() {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const error = params.get('error');
-    const token = params.get('token');
-    const user = params.get('user');
+    let isActive = true;
 
-    if (error) {
-      setErrorMessage(error);
+    const tryCompleteOAuth = () => {
+      const params = new URLSearchParams(window.location.search);
+      const error = params.get('error');
+      const token = params.get('token');
+      const user = params.get('user');
+      const code = params.get('code');
+
+      if (error) {
+        setErrorMessage(error);
+        return true;
+      }
+
+      if (token && user) {
+        try {
+          const session: AuthResponse = {
+            token,
+            user: JSON.parse(user),
+          };
+
+          completeOAuth(session);
+          navigate('/dashboard', { replace: true });
+          return true;
+        } catch (_error) {
+          setErrorMessage('Failed to complete Google sign-in.');
+          return true;
+        }
+      }
+
+      // If code lands on frontend callback (misconfigured provider callback),
+      // forward it to backend callback for token exchange.
+      if (code) {
+        const callbackUrl = `/api/v1/auth/google/callback${window.location.search}`;
+        window.location.replace(callbackUrl);
+        return true;
+      }
+
+      return false;
+    };
+
+    if (tryCompleteOAuth()) {
       return;
     }
 
-    if (!token || !user) {
-      setErrorMessage('Google sign-in did not return a valid session.');
-      return;
-    }
+    // Avoid transient false-negative flash while URL/session settles.
+    const timeoutId = window.setTimeout(() => {
+      if (!isActive) {
+        return;
+      }
 
-    try {
-      const session: AuthResponse = {
-        token,
-        user: JSON.parse(user),
-      };
+      if (!tryCompleteOAuth()) {
+        setErrorMessage('Google sign-in did not return a valid session.');
+      }
+    }, 350);
 
-      completeOAuth(session);
-      navigate('/dashboard', { replace: true });
-    } catch (_error) {
-      setErrorMessage('Failed to complete Google sign-in.');
-    }
+    return () => {
+      isActive = false;
+      window.clearTimeout(timeoutId);
+    };
   }, [completeOAuth, navigate]);
 
   return (
