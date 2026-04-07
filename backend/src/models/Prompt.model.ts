@@ -7,6 +7,7 @@ export interface IPrompt extends Document {
   description?: string;
   version: number;
   isActive: boolean;
+  tags?: string[];
   createdBy?: mongoose.Types.ObjectId | null;
   createdAt: Date;
   updatedAt: Date;
@@ -19,6 +20,7 @@ const PromptSchema: Schema = new Schema({
   description: { type: String },
   version: { type: Number, required: true },
   isActive: { type: Boolean, default: false },
+  tags: { type: [String], default: [] },
   createdBy: { type: Schema.Types.ObjectId, ref: 'User', default: null },
 }, {
   timestamps: true

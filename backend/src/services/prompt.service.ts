@@ -66,6 +66,12 @@ class PromptService {
     });
 
     if (!prompt) {
+      prompt = await Prompt.findOne({ isActive: true }).sort({
+        updatedAt: -1,
+      });
+    }
+
+    if (!prompt) {
       prompt = await Prompt.create({
         name,
         version: 1,

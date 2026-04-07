@@ -27,6 +27,7 @@ export interface IDocument extends Document {
   originalFilename: string;
   mimeType: string;
   filePath: string;
+  fileSizeBytes?: number;
   status: 'UPLOADED' | 'PROCESSING' | 'PROCESSED' | 'FAILED';
   extractedData: IExtractedData;
   confidenceScore?: number;
@@ -38,6 +39,7 @@ export interface IDocument extends Document {
   processingStartedAt?: Date;
   processedAt?: Date;
   errorMessage?: string;
+  retryCount?: number;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -69,6 +71,7 @@ const DocumentSchema: Schema = new Schema({
   originalFilename: { type: String, required: true },
   mimeType: { type: String, required: true, default: 'application/pdf' },
   filePath: { type: String, required: true },
+  fileSizeBytes: { type: Number, default: 0 },
   status: {
     type: String,
     enum: ['UPLOADED', 'PROCESSING', 'PROCESSED', 'FAILED'],
@@ -84,6 +87,7 @@ const DocumentSchema: Schema = new Schema({
   processingStartedAt: { type: Date, default: null },
   processedAt: { type: Date, default: null },
   errorMessage: { type: String, default: null },
+  retryCount: { type: Number, default: 0 },
 }, {
   timestamps: true
 });

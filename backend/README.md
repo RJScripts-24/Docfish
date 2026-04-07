@@ -32,5 +32,6 @@ Express + TypeScript API for invoice extraction, validation, prompt management, 
 ## API Base URL
 
 - Local: `http://localhost:5000`
+- Contract API: `http://localhost:5000/api/v1`
 - Health check: `GET /health`
 

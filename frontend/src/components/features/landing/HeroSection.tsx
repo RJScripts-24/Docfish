@@ -1,29 +1,148 @@
 import { ArrowRight, ExternalLink, Fish } from 'lucide-react';
 import { Link } from 'react-router';
 
-function Cloud1({ className }: { className: string }) {
+/* ── 1. Folded Page — classic document with dog-ear corner ─────── */
+function FoldedPage({ className }: { className: string }) {
   return (
-    <svg className={className} viewBox="0 0 120 60" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <path d="M20 50C10 50 2 42 2 32C2 24 8 17 16 15C16 7 24 0 34 0C42 0 49 5 51 12C53 11 55 10 58 10C66 10 72 16 72 24C72 24 72 24 72 25C74 24 77 23 80 23C90 23 98 31 98 41C98 46 96 50 92 50H20Z" 
-        fill="white" stroke="#1A1A1A" strokeWidth="2.5" strokeLinejoin="round"/>
+    <svg className={className} viewBox="0 0 90 110" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M8 6C8 3 10 1 13 1H55L82 28V104C82 107 80 109 77 109H13C10 109 8 107 8 104V6Z"
+        fill="white" stroke="#d0d5dd" strokeWidth="1.5"/>
+      <path d="M55 1V24C55 27 57 28 60 28H82" stroke="#d0d5dd" strokeWidth="1.5" fill="white"/>
+      <line x1="20" y1="44" x2="68" y2="44" stroke="#e4e7ec" strokeWidth="2.5" strokeLinecap="round"/>
+      <line x1="20" y1="54" x2="56" y2="54" stroke="#e4e7ec" strokeWidth="2.5" strokeLinecap="round"/>
+      <line x1="20" y1="64" x2="62" y2="64" stroke="#e4e7ec" strokeWidth="2.5" strokeLinecap="round"/>
+      <line x1="20" y1="74" x2="48" y2="74" stroke="#e4e7ec" strokeWidth="2.5" strokeLinecap="round"/>
+      <line x1="20" y1="84" x2="58" y2="84" stroke="#e4e7ec" strokeWidth="2.5" strokeLinecap="round"/>
     </svg>
   );
 }
 
-function Cloud2({ className }: { className: string }) {
+/* ── 2. Spreadsheet — grid document with columns ───────────────── */
+function Spreadsheet({ className }: { className: string }) {
   return (
-    <svg className={className} viewBox="0 0 120 60" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <path d="M 35 50 C 20 50 15 42 15 33 C 15 24 23 18 32 18 C 36 9 45 4 56 4 C 68 4 77 11 81 20 C 84 19 88 18 92 18 C 103 18 111 26 111 36 C 111 44 105 50 96 50 L 35 50 Z" 
-        fill="white" stroke="#1A1A1A" strokeWidth="2.5" strokeLinejoin="round"/>
+    <svg className={className} viewBox="0 0 90 110" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <rect x="3" y="3" width="84" height="104" rx="5" fill="white" stroke="#d0d5dd" strokeWidth="1.5"/>
+      {/* Header row */}
+      <rect x="3" y="3" width="84" height="18" rx="5" fill="#f2f4f7"/>
+      <rect x="3" y="16" width="84" height="5" fill="#f2f4f7"/>
+      {/* Grid lines */}
+      <line x1="32" y1="21" x2="32" y2="100" stroke="#e4e7ec" strokeWidth="1"/>
+      <line x1="60" y1="21" x2="60" y2="100" stroke="#e4e7ec" strokeWidth="1"/>
+      <line x1="8" y1="38" x2="82" y2="38" stroke="#e4e7ec" strokeWidth="1"/>
+      <line x1="8" y1="54" x2="82" y2="54" stroke="#e4e7ec" strokeWidth="1"/>
+      <line x1="8" y1="70" x2="82" y2="70" stroke="#e4e7ec" strokeWidth="1"/>
+      <line x1="8" y1="86" x2="82" y2="86" stroke="#e4e7ec" strokeWidth="1"/>
+      {/* Cell content hints */}
+      <line x1="10" y1="30" x2="26" y2="30" stroke="#d0d5dd" strokeWidth="2" strokeLinecap="round"/>
+      <line x1="38" y1="30" x2="54" y2="30" stroke="#d0d5dd" strokeWidth="2" strokeLinecap="round"/>
+      <line x1="66" y1="30" x2="78" y2="30" stroke="#d0d5dd" strokeWidth="2" strokeLinecap="round"/>
+      <line x1="10" y1="46" x2="24" y2="46" stroke="#e4e7ec" strokeWidth="2" strokeLinecap="round"/>
+      <line x1="38" y1="46" x2="52" y2="46" stroke="#e4e7ec" strokeWidth="2" strokeLinecap="round"/>
+      <line x1="66" y1="46" x2="76" y2="46" stroke="#e4e7ec" strokeWidth="2" strokeLinecap="round"/>
     </svg>
   );
 }
 
-function Cloud3({ className }: { className: string }) {
+/* ── 3. Invoice — receipt style with total bar ─────────────────── */
+function Invoice({ className }: { className: string }) {
   return (
-    <svg className={className} viewBox="0 0 120 60" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <path d="M 25 48 C 12 48 5 40 5 32 C 5 24 15 17 26 17 C 30 10 39 6 49 6 C 58 6 66 10 70 16 C 73 14 77 13 82 13 C 94 13 103 21 103 31 C 103 40 95 48 84 48 L 25 48 Z" 
-        fill="white" stroke="#1A1A1A" strokeWidth="2.5" strokeLinejoin="round"/>
+    <svg className={className} viewBox="0 0 80 110" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <rect x="3" y="3" width="74" height="104" rx="4" fill="white" stroke="#d0d5dd" strokeWidth="1.5"/>
+      {/* Logo placeholder */}
+      <circle cx="20" cy="18" r="8" fill="#f2f4f7"/>
+      <line x1="34" y1="14" x2="60" y2="14" stroke="#d0d5dd" strokeWidth="2.5" strokeLinecap="round"/>
+      <line x1="34" y1="22" x2="52" y2="22" stroke="#e4e7ec" strokeWidth="1.5" strokeLinecap="round"/>
+      {/* Divider */}
+      <line x1="12" y1="34" x2="68" y2="34" stroke="#e9ecef" strokeWidth="1"/>
+      {/* Line items */}
+      <line x1="12" y1="46" x2="44" y2="46" stroke="#e4e7ec" strokeWidth="2" strokeLinecap="round"/>
+      <line x1="56" y1="46" x2="68" y2="46" stroke="#e4e7ec" strokeWidth="2" strokeLinecap="round"/>
+      <line x1="12" y1="56" x2="40" y2="56" stroke="#e4e7ec" strokeWidth="2" strokeLinecap="round"/>
+      <line x1="56" y1="56" x2="68" y2="56" stroke="#e4e7ec" strokeWidth="2" strokeLinecap="round"/>
+      <line x1="12" y1="66" x2="48" y2="66" stroke="#e4e7ec" strokeWidth="2" strokeLinecap="round"/>
+      <line x1="56" y1="66" x2="68" y2="66" stroke="#e4e7ec" strokeWidth="2" strokeLinecap="round"/>
+      {/* Total bar */}
+      <line x1="12" y1="80" x2="68" y2="80" stroke="#d0d5dd" strokeWidth="1"/>
+      <rect x="42" y="86" width="26" height="10" rx="3" fill="#f2f4f7"/>
+    </svg>
+  );
+}
+
+/* ── 4. Clipboard — document on a clipboard ────────────────────── */
+function Clipboard({ className }: { className: string }) {
+  return (
+    <svg className={className} viewBox="0 0 80 106" fill="none" xmlns="http://www.w3.org/2000/svg">
+      {/* Clip */}
+      <rect x="26" y="0" width="28" height="14" rx="4" fill="white" stroke="#d0d5dd" strokeWidth="1.5"/>
+      <circle cx="40" cy="7" r="3" fill="#e9ecef"/>
+      {/* Board */}
+      <rect x="4" y="8" width="72" height="96" rx="5" fill="white" stroke="#d0d5dd" strokeWidth="1.5"/>
+      {/* Checklist */}
+      <rect x="14" y="28" width="8" height="8" rx="2" stroke="#e4e7ec" strokeWidth="1.5" fill="none"/>
+      <line x1="28" y1="32" x2="56" y2="32" stroke="#e4e7ec" strokeWidth="2" strokeLinecap="round"/>
+      <rect x="14" y="44" width="8" height="8" rx="2" stroke="#e4e7ec" strokeWidth="1.5" fill="none"/>
+      <line x1="28" y1="48" x2="52" y2="48" stroke="#e4e7ec" strokeWidth="2" strokeLinecap="round"/>
+      <rect x="14" y="60" width="8" height="8" rx="2" stroke="#e4e7ec" strokeWidth="1.5" fill="none"/>
+      <line x1="28" y1="64" x2="48" y2="64" stroke="#e4e7ec" strokeWidth="2" strokeLinecap="round"/>
+      {/* Bottom bar */}
+      <rect x="14" y="80" width="52" height="10" rx="3" fill="#f2f4f7"/>
+    </svg>
+  );
+}
+
+/* ── 5. Stacked Pages — multiple documents fanned ──────────────── */
+function StackedPages({ className }: { className: string }) {
+  return (
+    <svg className={className} viewBox="0 0 80 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+      {/* Back page */}
+      <rect x="10" y="10" width="60" height="80" rx="4" fill="white" stroke="#e4e7ec" strokeWidth="1"/>
+      {/* Middle page */}
+      <rect x="5" y="5" width="60" height="80" rx="4" fill="white" stroke="#e4e7ec" strokeWidth="1.2"/>
+      {/* Front page */}
+      <rect x="0" y="0" width="60" height="80" rx="4" fill="white" stroke="#d0d5dd" strokeWidth="1.5"/>
+      <line x1="10" y1="16" x2="46" y2="16" stroke="#e4e7ec" strokeWidth="2.5" strokeLinecap="round"/>
+      <line x1="10" y1="26" x2="40" y2="26" stroke="#e4e7ec" strokeWidth="2" strokeLinecap="round"/>
+      <line x1="10" y1="36" x2="44" y2="36" stroke="#e4e7ec" strokeWidth="2" strokeLinecap="round"/>
+      <line x1="10" y1="46" x2="36" y2="46" stroke="#e4e7ec" strokeWidth="2" strokeLinecap="round"/>
+      <line x1="10" y1="56" x2="42" y2="56" stroke="#e4e7ec" strokeWidth="2" strokeLinecap="round"/>
+    </svg>
+  );
+}
+
+/* ── 6. Form Document — with input fields ──────────────────────── */
+function FormDoc({ className }: { className: string }) {
+  return (
+    <svg className={className} viewBox="0 0 90 110" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <rect x="3" y="3" width="84" height="104" rx="5" fill="white" stroke="#d0d5dd" strokeWidth="1.5"/>
+      {/* Title */}
+      <line x1="22" y1="16" x2="68" y2="16" stroke="#d0d5dd" strokeWidth="3" strokeLinecap="round"/>
+      {/* Field 1 */}
+      <line x1="14" y1="34" x2="36" y2="34" stroke="#e4e7ec" strokeWidth="1.5" strokeLinecap="round"/>
+      <rect x="14" y="38" width="62" height="12" rx="3" stroke="#e4e7ec" strokeWidth="1" fill="none"/>
+      {/* Field 2 */}
+      <line x1="14" y1="60" x2="40" y2="60" stroke="#e4e7ec" strokeWidth="1.5" strokeLinecap="round"/>
+      <rect x="14" y="64" width="62" height="12" rx="3" stroke="#e4e7ec" strokeWidth="1" fill="none"/>
+      {/* Button */}
+      <rect x="44" y="86" width="32" height="12" rx="4" fill="#f2f4f7"/>
+    </svg>
+  );
+}
+
+/* ── 7. Chart Document — with a tiny bar chart ─────────────────── */
+function ChartDoc({ className }: { className: string }) {
+  return (
+    <svg className={className} viewBox="0 0 70 90" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <rect x="2" y="2" width="66" height="86" rx="4" fill="white" stroke="#d0d5dd" strokeWidth="1.5"/>
+      {/* Title */}
+      <line x1="12" y1="14" x2="44" y2="14" stroke="#d0d5dd" strokeWidth="2.5" strokeLinecap="round"/>
+      <line x1="12" y1="22" x2="36" y2="22" stroke="#e4e7ec" strokeWidth="1.5" strokeLinecap="round"/>
+      {/* Mini bar chart */}
+      <rect x="12" y="50" width="8" height="24" rx="2" fill="#f2f4f7"/>
+      <rect x="24" y="40" width="8" height="34" rx="2" fill="#eef0f4"/>
+      <rect x="36" y="46" width="8" height="28" rx="2" fill="#f2f4f7"/>
+      <rect x="48" y="36" width="8" height="38" rx="2" fill="#eef0f4"/>
+      {/* Baseline */}
+      <line x1="10" y1="74" x2="58" y2="74" stroke="#e4e7ec" strokeWidth="1"/>
     </svg>
   );
 }
@@ -31,14 +150,14 @@ function Cloud3({ className }: { className: string }) {
 export function HeroSection() {
   return (
     <section className="df-hero" id="hero">
-      {/* Decorative clouds */}
-      <Cloud1 className="df-cloud df-cloud-1" />
-      <Cloud2 className="df-cloud df-cloud-2" />
-      <Cloud3 className="df-cloud df-cloud-3" />
-      <Cloud1 className="df-cloud df-cloud-4" />
-      <Cloud2 className="df-cloud df-cloud-5" />
-      <Cloud3 className="df-cloud df-cloud-6" />
-      <Cloud1 className="df-cloud df-cloud-7" />
+      {/* Floating document elements — exact same positions as original clouds */}
+      <FoldedPage   className="df-hero-float df-float-1" />
+      <StackedPages className="df-hero-float df-float-2" />
+      <Invoice      className="df-hero-float df-float-3" />
+      <Spreadsheet  className="df-hero-float df-float-4" />
+      <ChartDoc     className="df-hero-float df-float-5" />
+      <Clipboard    className="df-hero-float df-float-6" />
+      <FormDoc      className="df-hero-float df-float-7" />
 
       <div className="df-hero-content">
         <div className="df-pill-badge">

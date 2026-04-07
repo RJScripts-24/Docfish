@@ -338,7 +338,7 @@
   display: block;
 }
 
-/* Clouds */
+/* Floating Document Elements */
 @keyframes df-float-1 {
   0%   { transform: translateY(0px); }
   50%  { transform: translateY(-12px); }
@@ -357,19 +357,20 @@
   100% { transform: translateY(0px); }
 }
 
-.df-cloud {
+.df-hero-float {
   position: absolute;
   z-index: 1;
   opacity: 0.9;
+  pointer-events: none;
 }
 
-.df-cloud-1 { top: 12%; left: 3%; width: 100px; animation: df-float-1 6s ease-in-out infinite; }
-.df-cloud-2 { top: 8%; left: 22%; width: 64px; animation: df-float-2 4s ease-in-out infinite 1s; }
-.df-cloud-3 { top: 18%; right: 5%; width: 120px; animation: df-float-3 7s ease-in-out infinite; }
-.df-cloud-4 { top: 6%; right: 18%; width: 80px; animation: df-float-1 5s ease-in-out infinite 0.5s; }
-.df-cloud-5 { top: 35%; left: 1%; width: 70px; animation: df-float-2 6.5s ease-in-out infinite 1.5s; }
-.df-cloud-6 { top: 50%; right: 2%; width: 90px; animation: df-float-3 5.5s ease-in-out infinite 0.2s; }
-.df-cloud-7 { top: 30%; right: 10%; width: 56px; animation: df-float-1 4.5s ease-in-out infinite 2s; }
+.df-float-1 { top: 12%; left: 3%; width: 100px; animation: df-float-1 6s ease-in-out infinite; }
+.df-float-2 { top: 8%; left: 22%; width: 64px; animation: df-float-2 4s ease-in-out infinite 1s; }
+.df-float-3 { top: 18%; right: 5%; width: 120px; animation: df-float-3 7s ease-in-out infinite; }
+.df-float-4 { top: 6%; right: 18%; width: 80px; animation: df-float-1 5s ease-in-out infinite 0.5s; }
+.df-float-5 { top: 35%; left: 1%; width: 70px; animation: df-float-2 6.5s ease-in-out infinite 1.5s; }
+.df-float-6 { top: 50%; right: 2%; width: 90px; animation: df-float-3 5.5s ease-in-out infinite 0.2s; }
+.df-float-7 { top: 30%; right: 10%; width: 56px; animation: df-float-1 4.5s ease-in-out infinite 2s; }
 
 /* ========================================
    TRUST BAR (Logo Marquee)
@@ -1305,7 +1306,7 @@
     display: none;
   }
   
-  .df-cloud {
+  .df-hero-float {
     display: none;
   }
 }

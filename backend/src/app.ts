@@ -8,6 +8,7 @@ import authRoutes from './routes/auth.routes';
 import documentRoutes from './routes/document.routes';
 import metricsRoutes from './routes/metrics.routes';
 import promptRoutes from './routes/prompt.routes';
+import v1Routes from './routes/v1.routes';
 import errorHandler from './middlewares/errorHandler.middleware';
 import { protect } from './middlewares/auth.middleware';
 import { reprocessInvoice } from './controllers/document.controller';
@@ -43,6 +44,7 @@ app.use('/api/documents', documentRoutes);
 app.post('/api/reprocess/:id', protect, reprocessInvoice);
 app.use('/api/metrics', metricsRoutes);
 app.use('/api/prompts', promptRoutes);
+app.use('/api/v1', v1Routes);
 
 // Compatibility aliases without /api prefix for assignment contract.
 app.use('/documents', documentRoutes);
