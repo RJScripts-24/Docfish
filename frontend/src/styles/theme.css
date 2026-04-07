@@ -179,3 +179,63 @@
     line-height: 1.5;
   }
 }
+
+/* ========================================
+   GLOBAL NEO-BRUTALIST BUTTONS
+   ======================================== */
+.df-btn-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background: var(--df-lime, #8AE04A);
+  color: #1A1A1A;
+  font-weight: 600;
+  font-size: 15px;
+  border: 1.5px solid #1A1A1A;
+  border-radius: 6px;
+  padding: 10px 24px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  text-decoration: none;
+  line-height: 1.4;
+  box-shadow: 3px 3px 0px #1A1A1A;
+}
+
+.df-btn-primary:active {
+  transform: translate(3px, 3px);
+  box-shadow: 0px 0px 0px #1A1A1A;
+}
+
+.df-btn-primary:hover {
+  background: var(--df-lime-hover, #7acc3e);
+}
+
+.df-btn-secondary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background: #ffffff;
+  color: #1A1A1A;
+  font-weight: 600;
+  font-size: 15px;
+  border: 1.5px solid #1A1A1A;
+  border-radius: 6px;
+  padding: 10px 24px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  text-decoration: none;
+  line-height: 1.4;
+  box-shadow: 3px 3px 0px #1A1A1A;
+}
+
+.df-btn-secondary:active {
+  transform: translate(3px, 3px);
+  box-shadow: 0px 0px 0px #1A1A1A;
+}
+
+.df-btn-secondary:hover {
+  background: #f9fafb;
+}
+

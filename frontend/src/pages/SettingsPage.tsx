@@ -208,19 +208,19 @@ export default function SettingsPage() {
                 Configure and version AI extraction prompts
               </p>
             </div>
-            <div className="flex gap-3">
+            <div className="flex gap-4">
               <button
                 onClick={() => setShowTestPanel(true)}
-                className="px-5 py-2.5 bg-white border-2 border-purple-500 text-purple-700 rounded-xl hover:bg-purple-50 transition-all font-semibold flex items-center gap-2"
+                className="df-btn-secondary px-5 py-2.5 bg-white border-purple-600 text-purple-700 shadow-[3px_3px_0_#9333ea]"
               >
-                <Beaker className="w-5 h-5" />
+                <Beaker className="w-5 h-5 text-purple-600" />
                 Test Prompt
               </button>
               <button
                 onClick={handleCreateNew}
-                className="px-5 py-2.5 bg-[var(--df-lime)] hover:bg-[#7BC942] text-gray-900 rounded-xl font-semibold transition-colors shadow-sm flex items-center gap-2"
+                className="df-btn-primary px-5 py-2.5 shadow-[3px_3px_0_var(--df-black)]"
               >
-                <Plus className="w-5 h-5" />
+                <Plus className="w-5 h-5 text-black" />
                 Create New Version
               </button>
             </div>

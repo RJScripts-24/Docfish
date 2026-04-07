@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router';
-import { Calendar, Menu, X, Fish } from 'lucide-react';
+import { Calendar, Menu, X, Fish, ArrowRight } from 'lucide-react';
 
 export function LandingNavbar() {
   const [scrolled, setScrolled] = useState(false);
@@ -30,10 +30,10 @@ export function LandingNavbar() {
 
         <div className="df-nav-right">
           <Link to="/auth" className="df-nav-signin">Sign in</Link>
-          <a href="#demo" className="df-btn-primary df-nav-cta">
-            <Calendar size={14} />
-            Book Demo
-          </a>
+          <Link to="/auth" className="df-btn-primary df-nav-cta">
+            Get Started
+            <ArrowRight size={14} />
+          </Link>
         </div>
 
         <button
@@ -58,10 +58,10 @@ export function LandingNavbar() {
         <a href="#customers" onClick={() => setMobileOpen(false)}>Customers</a>
         <a href="#resources" onClick={() => setMobileOpen(false)}>Resources</a>
         <a href="#pricing" onClick={() => setMobileOpen(false)}>Pricing</a>
-        <a href="#demo" onClick={() => setMobileOpen(false)} className="df-btn-primary" style={{ marginTop: 16, textAlign: 'center', justifyContent: 'center' }}>
-          <Calendar size={14} />
-          Book Demo
-        </a>
+        <Link to="/auth" onClick={() => setMobileOpen(false)} className="df-btn-primary" style={{ marginTop: 16, textAlign: 'center', justifyContent: 'center' }}>
+          Get Started
+          <ArrowRight size={14} />
+        </Link>
       </div>
     </>
   );

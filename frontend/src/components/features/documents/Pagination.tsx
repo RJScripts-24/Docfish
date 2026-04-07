@@ -48,17 +48,17 @@ export function Pagination({
         <button
           onClick={() => onPageChange(currentPage - 1)}
           disabled={currentPage === 1}
-          className={`p-2 rounded-lg transition-all ${
+          className={`p-2 rounded-[6px] border-1.5 transition-all ${
             currentPage === 1
-              ? 'text-gray-400 cursor-not-allowed'
-              : 'text-gray-700 hover:bg-gray-100'
+              ? 'text-gray-400 border-gray-100 cursor-not-allowed'
+              : 'text-gray-900 border-black shadow-[2px_2px_0_black] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none hover:bg-gray-50'
           }`}
         >
-          <ChevronLeft className="w-5 h-5" />
+          <ChevronLeft className="w-5 h-5" strokeWidth={3} />
         </button>
 
         {/* Page Numbers */}
-        <div className="flex gap-1">
+        <div className="flex gap-2">
           {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
             let pageNum;
             if (totalPages <= 5) {
@@ -75,10 +75,10 @@ export function Pagination({
               <button
                 key={pageNum}
                 onClick={() => onPageChange(pageNum)}
-                className={`w-10 h-10 rounded-lg font-medium transition-all ${
+                className={`w-10 h-10 rounded-[6px] border-1.5 font-bold transition-all ${
                   currentPage === pageNum
-                    ? 'bg-teal-500 text-white'
-                    : 'text-gray-700 hover:bg-gray-100'
+                    ? 'bg-[var(--df-lime)] text-gray-900 border-black shadow-[3px_3px_0_black] z-10'
+                    : 'bg-white text-gray-700 border-gray-200 hover:border-black hover:shadow-[2px_2px_0_black] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none'
                 }`}
               >
                 {pageNum}
@@ -90,13 +90,13 @@ export function Pagination({
         <button
           onClick={() => onPageChange(currentPage + 1)}
           disabled={currentPage === totalPages}
-          className={`p-2 rounded-lg transition-all ${
+          className={`p-2 rounded-[6px] border-1.5 transition-all ${
             currentPage === totalPages
-              ? 'text-gray-400 cursor-not-allowed'
-              : 'text-gray-700 hover:bg-gray-100'
+              ? 'text-gray-400 border-gray-100 cursor-not-allowed'
+              : 'text-gray-900 border-black shadow-[2px_2px_0_black] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none hover:bg-gray-50'
           }`}
         >
-          <ChevronRight className="w-5 h-5" />
+          <ChevronRight className="w-5 h-5" strokeWidth={3} />
         </button>
       </div>
     </div>

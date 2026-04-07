@@ -213,14 +213,14 @@ export default function DocumentsPage() {
             </div>
             <div className="flex gap-3">
               <Link to="/upload" className="flex-1 sm:flex-initial">
-                <button className="w-full sm:w-auto px-6 py-2.5 bg-white border-[1.5px] border-[var(--df-black)] rounded-full hover:bg-[var(--df-light-gray)] transition-all font-bold text-[var(--df-black)] flex items-center justify-center gap-2 text-sm shadow-sm hover:translate-y-[-1px]">
+                <button className="df-btn-secondary w-full sm:w-auto flex items-center justify-center gap-2 text-sm">
                   <FileUp className="w-4 h-4" />
                   <span className="hidden sm:inline">Bulk Upload</span>
                   <span className="sm:hidden">Bulk</span>
                 </button>
               </Link>
               <Link to="/upload" className="flex-1 sm:flex-initial">
-                <button className="w-full sm:w-auto px-6 py-2.5 bg-[var(--df-lime)] text-[var(--df-black)] rounded-full hover:bg-[var(--df-lime-hover)] transition-all font-bold flex items-center justify-center gap-2 text-sm shadow-[0_4px_16px_rgba(138,224,74,0.3)] hover:translate-y-[-1px]">
+                <button className="df-btn-primary w-full sm:w-auto flex items-center justify-center gap-2 text-sm shadow-[3px_3px_0_var(--df-black)]">
                   <Upload className="w-4 h-4" />
                   <span className="hidden sm:inline">Upload Invoice</span>
                   <span className="sm:hidden">Upload</span>

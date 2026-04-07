@@ -3,12 +3,6 @@ import { motion } from 'motion/react';
 import { AuthForm, AuthBranding } from '../components/features/auth/AuthComponents';
 
 export default function AuthPage() {
-  const [mode, setMode] = useState<'signin' | 'signup'>('signin');
-
-  const toggleMode = () => {
-    setMode(mode === 'signin' ? 'signup' : 'signin');
-  };
-
   return (
     <div className="min-h-screen flex flex-col lg:flex-row">
       {/* Left Panel - Branding */}
@@ -29,7 +23,7 @@ export default function AuthPage() {
       {/* Right Panel - Form */}
       <div className="flex-1 flex items-center justify-center p-4 sm:p-6 lg:p-8 xl:p-12 min-h-screen bg-[#F9FAFB]">
         <div className="w-full max-w-md">
-          <AuthForm mode={mode} onToggleMode={toggleMode} />
+          <AuthForm />
         </div>
       </div>
     </div>

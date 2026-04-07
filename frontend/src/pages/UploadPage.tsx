@@ -24,7 +24,7 @@ export default function UploadPage() {
               <p className="text-gray-600 mt-1">Upload and process your invoice PDFs with AI</p>
             </div>
             <Link to="/documents">
-              <button className="px-5 py-2 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 transition-all font-medium text-gray-700 flex items-center gap-2">
+              <button className="df-btn-secondary flex items-center gap-2">
                 View Documents
                 <ExternalLink className="w-4 h-4" />
               </button>
@@ -55,7 +55,7 @@ export default function UploadPage() {
                     </div>
                     <button
                       onClick={clearAll}
-                      className="px-4 py-2 text-red-600 hover:bg-red-50 rounded-xl transition-colors font-medium text-sm flex items-center gap-2"
+                      className="px-4 py-2 text-red-600 hover:bg-red-50 border-1.5 border-red-600 rounded-[6px] transition-all font-bold text-sm flex items-center gap-2 shadow-[3px_3px_0_red]"
                     >
                       <Trash2 className="w-4 h-4" />
                       Clear All
@@ -68,7 +68,7 @@ export default function UploadPage() {
                         key={file.id}
                         file={file}
                         onRemove={removeFile}
-                      />
+                       />
                     ))}
                   </div>
                 </motion.div>
@@ -80,11 +80,11 @@ export default function UploadPage() {
                   initial={{ opacity: 0, scale: 0.9 }}
                   animate={{ opacity: 1, scale: 1 }}
                   onClick={handleStartProcessing}
-                  className="w-full relative py-4 bg-[var(--df-lime)] text-gray-900 rounded-xl font-semibold text-lg shadow-sm hover:bg-[#7BC942] transition-colors flex items-center justify-center gap-3 border border-transparent"
+                  className="df-btn-primary w-full py-4 text-lg mb-8"
                 >
                   <Sparkles className="w-6 h-6" />
                   Start Processing ({completedCount} {completedCount === 1 ? 'Document' : 'Documents'})
-                  <p className="text-xs font-normal text-gray-700 absolute bottom-1">
+                  <p className="text-[10px] font-normal text-gray-800 absolute bottom-1 uppercase tracking-tight">
                     AI will extract and validate invoice data
                   </p>
                 </motion.button>

@@ -21,20 +21,20 @@ export function DashboardHeader() {
           <input
             type="text"
             placeholder="Search documents..."
-            className="pl-10 pr-4 py-2.5 w-72 bg-[var(--df-light-gray)] border-[1.5px] border-[var(--df-border)] rounded-xl focus:border-[var(--df-navy)] focus:ring-2 focus:ring-[var(--df-navy)]/5 transition-all outline-none text-sm font-medium placeholder:text-[var(--df-muted)]"
+            className="pl-10 pr-4 py-2.5 w-72 bg-white border-[1.5px] border-black rounded-[6px] focus:outline-none shadow-[2px_2px_0_black] text-sm font-bold placeholder:text-[var(--df-muted)] transition-all"
           />
         </div>
 
         {/* Notifications */}
-        <button className="relative p-2 hover:bg-gray-100 rounded-xl transition-colors">
-          <Bell className="w-6 h-6 text-gray-600" />
-          <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full" />
+        <button className="relative p-2.5 bg-white border-[1.5px] border-black rounded-[6px] shadow-[2px_2px_0_black] hover:bg-gray-50 transition-all active:translate-x-[1px] active:translate-y-[1px] active:shadow-none">
+          <Bell className="w-5 h-5 text-gray-900" strokeWidth={2.5} />
+          <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full border border-black shadow-sm" />
         </button>
 
         {/* Upload Button */}
         {!isErrorReports && (
           <Link to="/upload">
-            <button className="px-6 py-2.5 bg-[var(--df-lime)] text-[var(--df-black)] rounded-full hover:bg-[var(--df-lime-hover)] transition-all shadow-[0_4px_16px_rgba(138,224,74,0.3)] hover:translate-y-[-1px] flex items-center gap-2 font-bold text-sm">
+            <button className="df-btn-primary px-6 py-2.5 text-sm shadow-[3px_3px_0_var(--df-black)]">
               <Upload className="w-4 h-4" />
               Upload Document
             </button>
@@ -42,7 +42,7 @@ export function DashboardHeader() {
         )}
 
         {/* User Avatar */}
-        <button className="w-10 h-10 bg-[var(--df-navy)] rounded-xl flex items-center justify-center text-white font-bold hover:bg-gray-800 transition-all hover:scale-105 active:scale-95 shadow-sm">
+        <button className="w-10 h-10 bg-[var(--df-navy)] border-[1.5px] border-black rounded-[6px] flex items-center justify-center text-white font-bold shadow-[2px_2px_0_black] hover:scale-105 active:translate-x-[2px] active:translate-y-[2px] active:shadow-none transition-all">
           G
         </button>
       </div>

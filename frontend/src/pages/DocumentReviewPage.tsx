@@ -54,7 +54,7 @@ export default function DocumentReviewPage() {
           <div className="flex items-center gap-3">
             <button
               onClick={handleReprocess}
-              className="px-4 py-2 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 transition-all font-medium text-gray-700 flex items-center gap-2"
+              className="df-btn-secondary px-4 py-2 text-sm"
             >
               <RefreshCw className="w-4 h-4" />
               Reprocess
@@ -62,7 +62,7 @@ export default function DocumentReviewPage() {
 
             <button
               onClick={handleDownloadPDF}
-              className="px-4 py-2 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 transition-all font-medium text-gray-700 flex items-center gap-2"
+              className="df-btn-secondary px-4 py-2 text-sm"
             >
               <Download className="w-4 h-4" />
               PDF
@@ -70,7 +70,7 @@ export default function DocumentReviewPage() {
 
             <button
               onClick={handleDownloadJSON}
-              className="px-4 py-2 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 transition-all font-medium text-gray-700 flex items-center gap-2"
+              className="df-btn-secondary px-4 py-2 text-sm"
             >
               <FileText className="w-4 h-4" />
               JSON
@@ -81,15 +81,13 @@ export default function DocumentReviewPage() {
               disabled={!hasChanges}
               animate={{
                 scale: hasChanges ? [1, 1.05, 1] : 1,
+                translateY: hasChanges ? 0 : 3,
+                translateX: hasChanges ? 0 : 3,
               }}
-              transition={{
-                repeat: hasChanges ? Infinity : 0,
-                duration: 2,
-              }}
-              className={`px-6 py-2 rounded-xl font-semibold transition-all flex items-center gap-2 ${
+              className={`px-6 py-2 rounded-[6px] font-bold border-1.5 border-[#1A1A1A] transition-all flex items-center gap-2 text-sm ${
                 hasChanges
-                  ? 'bg-[var(--df-lime)] hover:bg-[#7BC942] text-gray-900 shadow-sm'
-                  : 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                  ? 'bg-[var(--df-lime)] text-gray-900 shadow-[3px_3px_0_#1A1A1A] active:translate-x-[3px] active:translate-y-[3px] active:shadow-none'
+                  : 'bg-gray-200 text-gray-400 border-gray-300 cursor-not-allowed'
               }`}
             >
               <Save className="w-4 h-4" />

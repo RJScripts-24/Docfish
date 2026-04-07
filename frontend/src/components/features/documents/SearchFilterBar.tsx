@@ -69,23 +69,23 @@ export function SearchFilterBar({
             value={searchQuery}
             onChange={(e) => handleSearchChange(e.target.value)}
             placeholder="Search by invoice number, vendor, or amount..."
-            className="w-full pl-12 pr-4 py-3 bg-[var(--df-light-gray)] border-[1.5px] border-[var(--df-border)] rounded-xl focus:outline-none focus:ring-2 focus:ring-[var(--df-navy)]/5 focus:border-[var(--df-navy)] transition-all font-medium text-sm placeholder:text-[var(--df-muted)]"
+            className="w-full pl-12 pr-4 py-3 bg-[var(--df-light-gray)] border-[1.5px] border-[var(--df-border)] rounded-[6px] focus:outline-none focus:ring-2 focus:ring-[var(--df-navy)]/5 focus:border-[var(--df-navy)] transition-all font-medium text-sm placeholder:text-[var(--df-muted)]"
           />
         </div>
 
         {/* Filter Toggle */}
         <button
           onClick={() => setShowFilters(!showFilters)}
-          className={`px-6 py-3 border-[1.5px] rounded-xl font-bold transition-all flex items-center gap-2 text-sm ${
+          className={`px-6 py-3 border-[1.5px] rounded-[6px] font-bold transition-all flex items-center gap-2 text-sm shadow-[3px_3px_0_var(--df-black)] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none ${
             showFilters || hasActiveFilters
-              ? 'border-[var(--df-navy)] bg-[var(--df-light-gray)] text-[var(--df-navy)] shadow-sm'
-              : 'border-[var(--df-border)] hover:border-[var(--df-black)] text-[var(--df-muted)] hover:text-[var(--df-black)]'
+              ? 'border-[var(--df-navy)] bg-[var(--df-lime)] text-[var(--df-black)]'
+              : 'border-[var(--df-border)] bg-white hover:border-[var(--df-black)] text-[var(--df-muted)] hover:text-[var(--df-black)]'
           }`}
         >
           <Filter className="w-4 h-4" />
           Filters
           {hasActiveFilters && (
-            <span className="w-2 h-2 bg-[var(--df-lime)] rounded-full shadow-[0_0_8px_rgba(138,224,74,0.6)]" />
+            <span className="w-2 h-2 bg-white rounded-full shadow-[0_0_8px_rgba(138,224,74,0.6)]" />
           )}
         </button>
 
@@ -93,7 +93,7 @@ export function SearchFilterBar({
         <select
           value={selectedSort}
           onChange={(e) => handleSortChange(e.target.value)}
-          className="px-6 py-3 bg-white border-[1.5px] border-[var(--df-border)] rounded-xl focus:outline-none focus:ring-2 focus:ring-[var(--df-navy)]/5 focus:border-[var(--df-navy)] font-bold text-sm text-[var(--df-black)] cursor-pointer transition-all hover:bg-[var(--df-light-gray)]"
+          className="px-6 py-3 bg-white border-[1.5px] border-[var(--df-border)] rounded-[6px] focus:outline-none focus:ring-2 focus:ring-[var(--df-navy)]/5 focus:border-[var(--df-navy)] font-bold text-sm text-[var(--df-black)] cursor-pointer transition-all hover:bg-[var(--df-light-gray)] shadow-[3px_3px_0_var(--df-black)]"
         >
           <option value="latest">Latest First</option>
           <option value="oldest">Oldest First</option>
@@ -120,7 +120,7 @@ export function SearchFilterBar({
             <select
               value={selectedStatus}
               onChange={(e) => handleStatusChange(e.target.value)}
-              className="w-full px-4 py-2.5 bg-white border-[1.5px] border-[var(--df-border)] rounded-xl focus:outline-none focus:ring-2 focus:ring-[var(--df-navy)]/5 focus:border-[var(--df-navy)] font-bold text-sm text-[var(--df-black)] cursor-pointer transition-all"
+              className="w-full px-4 py-2.5 bg-white border-[1.5px] border-[var(--df-border)] rounded-[6px] focus:outline-none focus:ring-2 focus:ring-[var(--df-navy)]/5 focus:border-[var(--df-navy)] font-bold text-sm text-[var(--df-black)] cursor-pointer transition-all"
             >
               <option value="all">All Status</option>
               <option value="success">Success Only</option>
@@ -137,7 +137,7 @@ export function SearchFilterBar({
             <select
               value={selectedDateRange}
               onChange={(e) => handleDateChange(e.target.value)}
-              className="w-full px-4 py-2.5 bg-white border-[1.5px] border-[var(--df-border)] rounded-xl focus:outline-none focus:ring-2 focus:ring-[var(--df-navy)]/5 focus:border-[var(--df-navy)] font-bold text-sm text-[var(--df-black)] cursor-pointer transition-all"
+              className="w-full px-4 py-2.5 bg-white border-[1.5px] border-[var(--df-border)] rounded-[6px] focus:outline-none focus:ring-2 focus:ring-[var(--df-navy)]/5 focus:border-[var(--df-navy)] font-bold text-sm text-[var(--df-black)] cursor-pointer transition-all"
             >
               <option value="all">All Time</option>
               <option value="today">Today</option>
@@ -152,10 +152,10 @@ export function SearchFilterBar({
             <button
               onClick={handleClearAll}
               disabled={!hasActiveFilters}
-              className={`w-full px-4 py-2.5 rounded-xl font-bold transition-all flex items-center justify-center gap-2 text-sm ${
+              className={`w-full px-4 py-2.5 rounded-[6px] font-bold border-[1.5px] transition-all flex items-center justify-center gap-2 text-sm ${
                 hasActiveFilters
-                  ? 'bg-red-50 text-red-600 hover:bg-red-100 shadow-sm'
-                  : 'bg-[var(--df-light-gray)] text-[var(--df-muted)] cursor-not-allowed border border-[var(--df-border)]'
+                  ? 'bg-red-50 text-red-600 border-red-600 shadow-[3px_3px_0_#dc2626] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none'
+                  : 'bg-[var(--df-light-gray)] text-[var(--df-muted)] cursor-not-allowed border-gray-300'
               }`}
             >
               <X className="w-4 h-4" />

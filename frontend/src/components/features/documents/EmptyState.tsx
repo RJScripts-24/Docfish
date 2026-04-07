@@ -24,7 +24,7 @@ export function EmptyState() {
       </p>
 
       <Link to="/upload">
-        <button className="px-6 py-3 bg-[var(--df-lime)] hover:bg-[#7BC942] text-gray-900 rounded-xl font-semibold transition-colors shadow-sm flex items-center gap-2 mx-auto">
+        <button className="df-btn-primary px-8 py-3.5 text-base shadow-[4px_4px_0_var(--df-black)] mx-auto">
           <Upload className="w-5 h-5" />
           Upload Your First Invoice
         </button>

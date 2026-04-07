@@ -1,4 +1,5 @@
-import { Calendar } from 'lucide-react';
+import { ArrowRight } from 'lucide-react';
+import { Link } from 'react-router';
 
 export function FinalCTA() {
   return (
@@ -10,12 +11,12 @@ export function FinalCTA() {
       <div className="df-geo-shape circle-1" />
 
       <div className="df-final-cta-content">
-        <h2>Schedule your demo today.</h2>
-        <p>See what Docfish can do for your invoice pipeline.</p>
-        <a href="#demo" className="df-btn-primary">
-          <Calendar size={16} />
-          Book Demo
-        </a>
+        <h2>Start extracting today.</h2>
+        <p>Docfish is ready to handle your invoice pipeline.</p>
+        <Link to="/auth" className="df-btn-primary">
+          Get Started
+          <ArrowRight size={16} />
+        </Link>
       </div>
     </section>
   );

@@ -1,11 +1,7 @@
 import { LandingNavbar } from '../components/features/landing/Navbar';
 import { HeroSection } from '../components/features/landing/HeroSection';
-import { TrustBar } from '../components/features/landing/TrustBar';
 import { ProblemSection } from '../components/features/landing/ProblemSection';
 import { FeatureSection } from '../components/features/landing/FeatureSection';
-import { TestimonialsSection } from '../components/features/landing/TestimonialsSection';
-import { IntegrationsSection } from '../components/features/landing/IntegrationsSection';
-import { SecuritySection } from '../components/features/landing/SecuritySection';
 import { FinalCTA } from '../components/features/landing/FinalCTA';
 import { Footer } from '../components/features/landing/Footer';
 
@@ -16,9 +12,6 @@ export default function LandingPage() {
       
       {/* Section 1 — Hero */}
       <HeroSection />
-
-      {/* Section 2 — Trust Bar */}
-      <TrustBar />
 
       {/* Section 3+4 — Problem + Solution */}
       <ProblemSection />
@@ -98,15 +91,6 @@ export default function LandingPage() {
           },
         ]}
       />
-
-      {/* Section 8 — Testimonials */}
-      <TestimonialsSection />
-
-      {/* Section 9 — Integrations */}
-      <IntegrationsSection />
-
-      {/* Section 10 — Security */}
-      <SecuritySection />
 
       {/* Section 11 — Final CTA */}
       <FinalCTA />
