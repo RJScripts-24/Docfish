@@ -124,6 +124,35 @@ export function TestPromptPanel({ isOpen, onClose, onRunTest }: TestPromptPanelP
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
             >
+              <div className="mb-4 rounded-xl border border-gray-200 bg-gray-50 px-4 py-3">
+                <div className="flex flex-wrap items-center gap-2 text-xs font-semibold text-gray-700">
+                  <span className="rounded-md bg-white px-2 py-1 border border-gray-200">
+                    Prompt v{testResult.promptVersion}
+                  </span>
+                  <span className="rounded-md bg-white px-2 py-1 border border-gray-200 uppercase">
+                    {testResult.extractionMethod}
+                  </span>
+                  <span
+                    className={`rounded-md px-2 py-1 border ${
+                      testResult.modelBacked
+                        ? 'bg-green-50 border-green-200 text-green-700'
+                        : 'bg-yellow-50 border-yellow-200 text-yellow-700'
+                    }`}
+                  >
+                    {testResult.modelBacked ? 'Model-backed' : 'Fallback mode'}
+                  </span>
+                  <span className="rounded-md bg-white px-2 py-1 border border-gray-200">
+                    {testResult.processingTime}
+                  </span>
+                </div>
+
+                {testResult.degradedMode ? (
+                  <p className="mt-2 text-xs text-yellow-800">
+                    Degraded mode: {testResult.degradedModeReason || 'Fallback was used because model execution was not available.'}
+                  </p>
+                ) : null}
+              </div>
+
               <div className="flex items-center justify-between mb-3">
                 <label className="text-sm font-semibold text-gray-700">
                   Extraction Results

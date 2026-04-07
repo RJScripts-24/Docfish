@@ -28,7 +28,7 @@ export const createPrompt = async (req: Request, res: Response): Promise<void> =
 export const getPrompts = async (req: Request, res: Response): Promise<void> => {
   try {
     const name = typeof req.query.name === 'string' ? req.query.name : undefined;
-    const prompts = await promptService.listPromptVersions(name);
+    const prompts = await promptService.listPromptVersions(name, req.user?.userId);
     res.status(200).json(prompts);
   } catch (error: any) {
     res.status(500).json({ error: error.message });
@@ -37,7 +37,7 @@ export const getPrompts = async (req: Request, res: Response): Promise<void> => 
 
 export const getActivePrompt = async (req: Request, res: Response): Promise<void> => {
   try {
-    const activePrompt = await promptService.getActivePrompt();
+    const activePrompt = await promptService.getActivePrompt('invoice_extraction', req.user?.userId);
     
     if (!activePrompt) {
       res.status(404).json({ error: 'No active prompt found' });
@@ -53,7 +53,7 @@ export const getActivePrompt = async (req: Request, res: Response): Promise<void
 export const activatePrompt = async (req: Request, res: Response): Promise<void> => {
   try {
     const { id } = req.params;
-    const activatedPrompt = await promptService.activatePrompt(id);
+    const activatedPrompt = await promptService.activatePrompt(id, req.user?.userId);
     
     if (!activatedPrompt) {
       res.status(404).json({ error: 'Prompt not found' });

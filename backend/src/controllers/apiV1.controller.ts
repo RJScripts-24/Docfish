@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import path from 'path';
 import crypto from 'crypto';
+import mongoose from 'mongoose';
 import Document from '../models/Document.model';
 import Prompt from '../models/Prompt.model';
 import extractionService from '../services/extraction.service';
@@ -49,6 +50,14 @@ const parseBoolean = (value: unknown, fallback: boolean) => {
   }
 
   return fallback;
+};
+
+const parseExtractionMode = (value: unknown): 'fast' | 'accurate' => {
+  if (value === 'fast') {
+    return 'fast';
+  }
+
+  return 'accurate';
 };
 
 const parseOAuthState = (value: unknown): { redirectUri?: string; nonce?: string } | null => {
@@ -187,48 +196,6 @@ const matchesDateFilter = (value: string, dateFilter: string) => {
 
 const toChartLabelHour = (date: Date) => `${String(date.getHours()).padStart(2, '0')}:00`;
 
-const firstTextLine = (sampleText: string) =>
-  sampleText
-    .split(/\r?\n/)
-    .map((line) => line.trim())
-    .find(Boolean) || null;
-
-const extractTestDataFromText = (sampleText: string) => {
-  const invoiceNumber = sampleText.match(/invoice\s*(?:number|no|#)\s*[:\-]?\s*([A-Z0-9\-\/]+)/i)?.[1] || null;
-  const invoiceDate =
-    sampleText.match(
-      /\b(\d{1,2}[\/\-]\d{1,2}[\/\-]\d{2,4}|\d{4}[\/\-]\d{1,2}[\/\-]\d{1,2}|[A-Za-z]{3,9}\s+\d{1,2},\s+\d{4})\b/
-    )?.[1] || null;
-  const totalAmountRaw =
-    sampleText.match(
-      /(?:total|grand total|amount due|net payable)\s*[:\-]?\s*(?:INR|USD|EUR|GBP|Rs\.?|\$|€|£)?\s*([0-9,]+(?:\.[0-9]{1,2})?)/i
-    )?.[1] || null;
-  const taxAmountRaw =
-    sampleText.match(/(?:tax|vat|gst|sales tax)\s*[:\-]?\s*(?:INR|USD|EUR|GBP|Rs\.?|\$|€|£)?\s*([0-9,]+(?:\.[0-9]{1,2})?)/i)
-      ?.[1] || null;
-
-  const currency =
-    sampleText.includes('₹') || /\bINR\b/i.test(sampleText)
-      ? 'INR'
-      : sampleText.includes('$') || /\bUSD\b/i.test(sampleText)
-      ? 'USD'
-      : sampleText.includes('€') || /\bEUR\b/i.test(sampleText)
-      ? 'EUR'
-      : sampleText.includes('£') || /\bGBP\b/i.test(sampleText)
-      ? 'GBP'
-      : null;
-
-  return {
-    vendor_name: firstTextLine(sampleText),
-    invoice_number: invoiceNumber,
-    invoice_date: invoiceDate,
-    currency,
-    total_amount: totalAmountRaw ? Number(totalAmountRaw.replace(/,/g, '')) : null,
-    tax_amount: taxAmountRaw ? Number(taxAmountRaw.replace(/,/g, '')) : null,
-    line_items: [],
-  };
-};
-
 export const authGoogle = async (req: Request, res: Response): Promise<void> => {
   const statePayload = {
     redirectUri: typeof req.query.redirect_uri === 'string' ? req.query.redirect_uri : '',
@@ -269,20 +236,30 @@ export const authGoogleCallback = async (req: Request, res: Response): Promise<v
     const code = typeof req.query.code === 'string' ? req.query.code : '';
 
     if (!code) {
+      if (redirectUri) {
+        res.redirect(302, buildOAuthRedirectUrl(redirectUri, { error: 'Missing OAuth code' }));
+        return;
+      }
       sendApiError(res, 400, 'INVALID_OAUTH_CODE', 'Invalid OAuth code');
       return;
     }
-
-    let email = `google_${code.slice(0, 8)}@docfish.local`;
-    let name = 'Google User';
-    let avatarUrl = '';
 
     const clientId = process.env.GOOGLE_CLIENT_ID;
     const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
     const callbackUrl =
       process.env.GOOGLE_CALLBACK_URL || `${req.protocol}://${req.get('host')}/api/v1/auth/google/callback`;
 
-    if (clientId && clientSecret && code !== 'dev-google-code') {
+    let email = '';
+    let name = '';
+    let avatarUrl = '';
+
+    // Handle development/mock mode if credentials are missing
+    if (!clientId || !clientSecret || code === 'dev-google-code') {
+      console.warn('[AUTH] Google OAuth credentials missing or dev-code used, falling back to mock user');
+      email = `google_${code.slice(0, 8)}@docfish.local`;
+      name = 'Google User (Dev)';
+    } else {
+      // Exchange code for token
       const tokenResponse = await fetch('https://oauth2.googleapis.com/token', {
         method: 'POST',
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
@@ -296,31 +273,41 @@ export const authGoogleCallback = async (req: Request, res: Response): Promise<v
       });
 
       if (!tokenResponse.ok) {
-        sendApiError(res, 400, 'INVALID_OAUTH_CODE', 'Invalid OAuth code');
-        return;
+        const errorData = await tokenResponse.json().catch(() => ({}));
+        console.error('[AUTH] Google token exchange failed', errorData);
+        throw new Error('Failed to exchange code for token');
       }
 
       const tokenPayload = (await tokenResponse.json()) as { access_token?: string };
 
-      if (tokenPayload.access_token) {
-        const userResponse = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
-          headers: {
-            Authorization: `Bearer ${tokenPayload.access_token}`,
-          },
-        });
-
-        if (userResponse.ok) {
-          const userPayload = (await userResponse.json()) as {
-            email?: string;
-            name?: string;
-            picture?: string;
-          };
-
-          email = userPayload.email || email;
-          name = userPayload.name || name;
-          avatarUrl = userPayload.picture || avatarUrl;
-        }
+      if (!tokenPayload.access_token) {
+        throw new Error('Google did not return an access token');
       }
+
+      // Get user info
+      const userResponse = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+        headers: {
+          Authorization: `Bearer ${tokenPayload.access_token}`,
+        },
+      });
+
+      if (!userResponse.ok) {
+        throw new Error('Failed to fetch user info from Google');
+      }
+
+      const userPayload = (await userResponse.json()) as {
+        email?: string;
+        name?: string;
+        picture?: string;
+      };
+
+      if (!userPayload.email) {
+        throw new Error('Google did not return an email address');
+      }
+
+      email = userPayload.email;
+      name = userPayload.name || 'Google User';
+      avatarUrl = userPayload.picture || '';
     }
 
     const authResponse = await authService.createOrGetSocialUser({
@@ -342,6 +329,7 @@ export const authGoogleCallback = async (req: Request, res: Response): Promise<v
 
     res.status(200).json(authResponse);
   } catch (error: any) {
+    console.error('[AUTH] Google OAuth callback error:', error);
     if (redirectUri) {
       res.redirect(
         302,
@@ -457,6 +445,8 @@ export const uploadDocumentsV1 = async (req: Request, res: Response): Promise<vo
     }
 
     const autoProcess = parseBoolean(req.body.autoProcess, true);
+    const extractionMode = parseExtractionMode(req.body.extractionMode);
+    const runValidation = parseBoolean(req.body.runValidation, true);
 
     const uploads = await Promise.all(
       files.map(async (file) => {
@@ -467,6 +457,11 @@ export const uploadDocumentsV1 = async (req: Request, res: Response): Promise<vo
           fileSizeBytes: file.size || 0,
           status: 'UPLOADED',
           uploadedBy: req.user?.userId || null,
+          processingOptions: {
+            autoProcess,
+            extractionMode,
+            runValidation,
+          },
         });
 
         if (autoProcess) {
@@ -477,6 +472,8 @@ export const uploadDocumentsV1 = async (req: Request, res: Response): Promise<vo
               originalFilename: document.originalFilename,
               mimeType: document.mimeType,
               userId: req.user?.userId,
+              extractionMode,
+              runValidation,
             })
             .catch((error: unknown) => {
               console.error('[Upload] Async document processing failed', {
@@ -494,6 +491,8 @@ export const uploadDocumentsV1 = async (req: Request, res: Response): Promise<vo
           mimeType: document.mimeType,
           sizeBytes: document.fileSizeBytes,
           autoProcess,
+          extractionMode,
+          runValidation,
           uploadedBy: req.user?.userId || null,
         });
 
@@ -543,6 +542,7 @@ export const updateDocumentV1 = async (req: Request, res: Response): Promise<voi
 
     const extractedFields = req.body?.extractedFields;
     const lineItems = req.body?.lineItems;
+    const changedFields = new Set<string>();
 
     const nextData = {
       ...document.extractedData,
@@ -556,6 +556,13 @@ export const updateDocumentV1 = async (req: Request, res: Response): Promise<voi
           continue;
         }
 
+        const incomingValue = fieldValue === '' ? null : fieldValue;
+        const currentValue = (nextData as any)[internalField];
+
+        if (currentValue !== incomingValue) {
+          changedFields.add(fieldKey);
+        }
+
         if (internalField === 'total_amount' || internalField === 'tax_amount') {
           nextData[internalField] = parseNumberOrNull(fieldValue);
         } else {
@@ -565,6 +572,7 @@ export const updateDocumentV1 = async (req: Request, res: Response): Promise<voi
     }
 
     if (Array.isArray(lineItems)) {
+      changedFields.add('lineItems');
       nextData.line_items = lineItems.map((item: any) => ({
         description: String(item.description || '').trim(),
         quantity: parseNumberOrNull(item.quantity),
@@ -573,16 +581,43 @@ export const updateDocumentV1 = async (req: Request, res: Response): Promise<voi
       }));
     }
 
-    const validation = validationService.validate(nextData);
+    const validation = validationService.validate(nextData, {
+      extractionMethod: 'manual',
+    });
 
     document.extractedData = validation.normalizedData as any;
     document.validationErrors = validation.validationErrors;
     document.confidenceScore = validation.confidenceScore;
     document.status = 'PROCESSED';
+    document.extractionMethod = 'manual';
+    document.manuallyEdited = true;
+    const editedBy =
+      req.user?.userId && mongoose.Types.ObjectId.isValid(req.user.userId)
+        ? new mongoose.Types.ObjectId(req.user.userId)
+        : null;
+    document.manualEdits = [
+      ...(document.manualEdits || []),
+      {
+        editedAt: new Date(),
+        editedBy,
+        changedFields: [...changedFields],
+      },
+    ];
     document.errorMessage = null;
     document.processedAt = new Date();
+    document.resultPayload = {
+      extractedData: document.extractedData,
+      validation,
+      rawText: document.rawText || '',
+      promptVersion: document.promptVersion || null,
+      processingTimeMs: document.processingTimeMs || 0,
+      extractionMethod: document.extractionMethod || 'manual',
+      manuallyEdited: document.manuallyEdited || false,
+      manualEdits: document.manualEdits || [],
+    } as any;
 
     const updated = await document.save();
+    await storageService.saveJsonResult(String(updated._id), updated.resultPayload);
 
     res.status(200).json(toDocumentDetails(req, updated.toObject()));
   } catch (error: any) {
@@ -605,6 +640,7 @@ export const deleteDocumentV1 = async (req: Request, res: Response): Promise<voi
     }
 
     await storageService.deleteFile(document.filePath);
+    await storageService.deleteJsonResult(String(document._id));
     await Document.findByIdAndDelete(document._id);
 
     res.status(204).send();
@@ -682,9 +718,14 @@ export const bulkDeleteDocumentsV1 = async (req: Request, res: Response): Promis
       ...buildScope(req),
     };
 
-    const documents = await Document.find(query).select('filePath').lean();
+    const documents = await Document.find(query).select('_id filePath').lean();
 
-    await Promise.all(documents.map((doc) => storageService.deleteFile(doc.filePath)));
+    await Promise.all(
+      documents.map(async (doc) => {
+        await storageService.deleteFile(doc.filePath);
+        await storageService.deleteJsonResult(String(doc._id));
+      })
+    );
     await Document.deleteMany(query);
 
     res.status(204).send();
@@ -1076,7 +1117,10 @@ export const retryAllFailedV1 = async (req: Request, res: Response): Promise<voi
 
 export const listPromptsV1 = async (_req: Request, res: Response): Promise<void> => {
   try {
-    const prompts = await Prompt.find({}).sort({ updatedAt: -1 }).lean();
+    const ownerId = _req.user?.userId || null;
+    const prompts = await Prompt.find({ $or: [{ createdBy: null }, { createdBy: ownerId }] })
+      .sort({ createdBy: 1, updatedAt: -1 })
+      .lean();
     res.status(200).json(prompts.map((prompt) => toPromptVersion(prompt)));
   } catch (error: any) {
     sendApiError(res, 500, 'INTERNAL_ERROR', error.message || 'Failed to list prompts');
@@ -1093,7 +1137,8 @@ export const createPromptV1 = async (req: Request, res: Response): Promise<void>
       return;
     }
 
-    const latestPrompt = await Prompt.findOne({}).sort({ createdAt: -1 }).lean();
+    const ownerId = req.user?.userId || null;
+    const latestPrompt = await Prompt.findOne({ name }).sort({ version: -1 }).lean();
     const nextVersion = latestPrompt ? Number(latestPrompt.version || 0) + 1 : 1;
 
     const tags = Array.isArray(req.body?.tags)
@@ -1109,7 +1154,7 @@ export const createPromptV1 = async (req: Request, res: Response): Promise<void>
       userPrompt: content,
       tags,
       isActive: false,
-      createdBy: req.user?.userId || null,
+      createdBy: ownerId,
     });
 
     res.status(201).json(toPromptVersion(prompt.toObject()));
@@ -1120,7 +1165,8 @@ export const createPromptV1 = async (req: Request, res: Response): Promise<void>
 
 export const getPromptV1 = async (req: Request, res: Response): Promise<void> => {
   try {
-    const prompt = await Prompt.findById(req.params.id).lean();
+    const ownerId = req.user?.userId || null;
+    const prompt = await Prompt.findOne({ _id: req.params.id, $or: [{ createdBy: null }, { createdBy: ownerId }] }).lean();
 
     if (!prompt) {
       sendApiError(res, 404, 'NOT_FOUND', 'Prompt version not found');
@@ -1135,7 +1181,8 @@ export const getPromptV1 = async (req: Request, res: Response): Promise<void> =>
 
 export const updatePromptV1 = async (req: Request, res: Response): Promise<void> => {
   try {
-    const prompt = await Prompt.findById(req.params.id);
+    const ownerId = req.user?.userId || null;
+    const prompt = await Prompt.findOne({ _id: req.params.id, createdBy: ownerId });
 
     if (!prompt) {
       sendApiError(res, 404, 'NOT_FOUND', 'Prompt version not found');
@@ -1159,7 +1206,7 @@ export const updatePromptV1 = async (req: Request, res: Response): Promise<void>
     }
 
     if (req.body?.status === 'active') {
-      await Prompt.updateMany({}, { $set: { isActive: false } });
+      await Prompt.updateMany({ createdBy: ownerId }, { $set: { isActive: false } });
       prompt.isActive = true;
     }
 
@@ -1177,7 +1224,8 @@ export const updatePromptV1 = async (req: Request, res: Response): Promise<void>
 
 export const deletePromptV1 = async (req: Request, res: Response): Promise<void> => {
   try {
-    const prompt = await Prompt.findById(req.params.id);
+    const ownerId = req.user?.userId || null;
+    const prompt = await Prompt.findOne({ _id: req.params.id, createdBy: ownerId });
 
     if (!prompt) {
       sendApiError(res, 404, 'NOT_FOUND', 'Prompt version not found');
@@ -1189,7 +1237,7 @@ export const deletePromptV1 = async (req: Request, res: Response): Promise<void>
       return;
     }
 
-    await Prompt.findByIdAndDelete(prompt._id);
+    await Prompt.findOneAndDelete({ _id: prompt._id, createdBy: ownerId });
 
     res.status(204).send();
   } catch (error: any) {
@@ -1199,14 +1247,15 @@ export const deletePromptV1 = async (req: Request, res: Response): Promise<void>
 
 export const activatePromptV1 = async (req: Request, res: Response): Promise<void> => {
   try {
-    const prompt = await Prompt.findById(req.params.id);
+    const ownerId = req.user?.userId || null;
+    const prompt = await Prompt.findOne({ _id: req.params.id, createdBy: ownerId });
 
     if (!prompt) {
       sendApiError(res, 404, 'NOT_FOUND', 'Prompt version not found');
       return;
     }
 
-    await Prompt.updateMany({}, { $set: { isActive: false } });
+    await Prompt.updateMany({ createdBy: ownerId }, { $set: { isActive: false } });
     prompt.isActive = true;
     await prompt.save();
 
@@ -1225,34 +1274,58 @@ export const testPromptV1 = async (req: Request, res: Response): Promise<void> =
       return;
     }
 
-    const prompt = await Prompt.findById(req.params.id).lean();
+    const promptTestResult = await extractionService.testPromptVersion(req.params.id, sampleText, req.user?.userId);
+    const confidence = Math.round(promptTestResult.confidenceScore * 100);
+    const validationResults =
+      promptTestResult.validation.validationErrors.length > 0
+        ? promptTestResult.validation.validationErrors.map((error) => ({
+            passed: false,
+            title: (error.code || 'VALIDATION_ERROR').replace(/_/g, ' '),
+            message: error.message || 'Validation failed',
+            severity: (error.code || '').startsWith('MISSING_') ? 'warning' : 'error',
+            field: error.field,
+            code: error.code,
+          }))
+        : [
+            {
+              passed: true,
+              title: 'Validation Passed',
+              message: 'No validation errors were found in this prompt test.',
+              severity: 'ok',
+              field: null,
+              code: null,
+            },
+          ];
 
-    if (!prompt) {
+    res.status(200).json({
+      promptId: promptTestResult.promptId,
+      promptVersion: promptTestResult.promptVersion,
+      extractionMethod: promptTestResult.extractionMethod,
+      modelBacked: promptTestResult.modelBacked,
+      degradedMode: promptTestResult.degradedMode,
+      degradedModeReason: promptTestResult.degradedModeReason,
+      extractedFields: {
+        vendorName: toExtractedField(promptTestResult.normalizedOutput.vendor_name, confidence),
+        invoiceNumber: toExtractedField(promptTestResult.normalizedOutput.invoice_number, confidence),
+        invoiceDate: toExtractedField(promptTestResult.normalizedOutput.invoice_date, confidence),
+        currency: toExtractedField(promptTestResult.normalizedOutput.currency, confidence),
+        totalAmount: toExtractedField(promptTestResult.normalizedOutput.total_amount, confidence),
+        taxAmount: toExtractedField(promptTestResult.normalizedOutput.tax_amount, confidence),
+      },
+      normalizedOutput: promptTestResult.normalizedOutput,
+      validationResults,
+      rawModelOutput: promptTestResult.rawModelOutput,
+      rawOutput: JSON.stringify(promptTestResult.parsedOutput || promptTestResult.normalizedOutput, null, 2),
+      processingTime: `${(promptTestResult.processingTimeMs / 1000).toFixed(1)}s`,
+      processingTimeMs: promptTestResult.processingTimeMs,
+      overallConfidence: confidence,
+    });
+  } catch (error: any) {
+    if ((error?.message || '').toLowerCase().includes('prompt not found')) {
       sendApiError(res, 404, 'NOT_FOUND', 'Prompt version not found');
       return;
     }
 
-    const startedAt = Date.now();
-    const extracted = extractTestDataFromText(sampleText);
-    const validation = validationService.validate(extracted);
-    const confidence = Math.round(validation.confidenceScore * 100);
-
-    const processingTime = `${((Date.now() - startedAt) / 1000).toFixed(1)}s`;
-
-    res.status(200).json({
-      extractedFields: {
-        vendorName: toExtractedField(validation.normalizedData.vendor_name, confidence),
-        invoiceNumber: toExtractedField(validation.normalizedData.invoice_number, confidence),
-        invoiceDate: toExtractedField(validation.normalizedData.invoice_date, confidence),
-        currency: toExtractedField(validation.normalizedData.currency, confidence),
-        totalAmount: toExtractedField(validation.normalizedData.total_amount, confidence),
-        taxAmount: toExtractedField(validation.normalizedData.tax_amount, confidence),
-      },
-      rawOutput: JSON.stringify(validation.normalizedData, null, 2),
-      processingTime,
-      overallConfidence: confidence,
-    });
-  } catch (error: any) {
     sendApiError(res, 500, 'INTERNAL_ERROR', error.message || 'Failed to test prompt');
   }
 };

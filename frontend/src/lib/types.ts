@@ -32,12 +32,12 @@ export interface DocumentChartPoint {
 export interface InvoiceDocument {
   id: string;
   name: string;
-  vendor: string;
-  invoiceDate: string;
-  amount: number;
+  vendor: string | null;
+  invoiceDate: string | null;
+  amount: number | null;
   status: DocumentStatus;
   confidence: number;
-  processingTime: string;
+  processingTime: string | null;
 }
 
 export interface DocumentListResponse {
@@ -57,9 +57,9 @@ export interface ExtractedField {
 export interface EditableLineItem {
   id: number;
   description: string;
-  quantity: number;
-  unitPrice: number;
-  total: number;
+  quantity: number | null;
+  unitPrice: number | null;
+  total: number | null;
 }
 
 export interface ValidationResult {
@@ -72,8 +72,11 @@ export interface ValidationResult {
 export interface DocumentDetails {
   id: string;
   status: DocumentStatus;
-  processingTime: string;
+  processingTime: string | null;
   overallConfidence: number;
+  extractionMethod?: 'llm' | 'heuristic' | 'ocr_heuristic' | 'manual' | null;
+  manuallyEdited?: boolean;
+  lastManualEditAt?: string | null;
   documentUrl: string;
   extractedFields: Record<string, ExtractedField>;
   lineItems: EditableLineItem[];
@@ -119,8 +122,25 @@ export interface PromptVersion {
 }
 
 export interface PromptTestResult {
+  promptId: string;
+  promptVersion: number;
+  extractionMethod: 'llm' | 'heuristic' | 'ocr_heuristic' | 'manual';
+  modelBacked: boolean;
+  degradedMode: boolean;
+  degradedModeReason: string | null;
   extractedFields: Record<string, ExtractedField>;
+  normalizedOutput: Record<string, unknown>;
+  validationResults: Array<{
+    passed: boolean;
+    title: string;
+    message: string;
+    severity: 'ok' | 'warning' | 'error';
+    field: string | null;
+    code: string | null;
+  }>;
+  rawModelOutput: string | null;
   rawOutput: string;
   processingTime: string;
+  processingTimeMs: number;
   overallConfidence: number;
 }

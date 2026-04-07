@@ -2,11 +2,31 @@ import { motion } from 'motion/react';
 import { ChevronDown, Zap, Target, Shield } from 'lucide-react';
 import { useState } from 'react';
 
-export function AdvancedSettings() {
+export interface AdvancedUploadSettings {
+  extractionMode: 'fast' | 'accurate';
+  autoProcess: boolean;
+  validation: boolean;
+}
+
+interface AdvancedSettingsProps {
+  value: AdvancedUploadSettings;
+  onChange: (value: AdvancedUploadSettings) => void;
+}
+
+export function AdvancedSettings({ value, onChange }: AdvancedSettingsProps) {
   const [isOpen, setIsOpen] = useState(false);
-  const [extractionMode, setExtractionMode] = useState<'fast' | 'accurate'>('accurate');
-  const [autoProcess, setAutoProcess] = useState(true);
-  const [validation, setValidation] = useState(true);
+
+  const setExtractionMode = (extractionMode: 'fast' | 'accurate') => {
+    onChange({ ...value, extractionMode });
+  };
+
+  const toggleAutoProcess = () => {
+    onChange({ ...value, autoProcess: !value.autoProcess });
+  };
+
+  const toggleValidation = () => {
+    onChange({ ...value, validation: !value.validation });
+  };
 
   return (
     <motion.div
@@ -54,13 +74,13 @@ export function AdvancedSettings() {
               <button
                 onClick={() => setExtractionMode('fast')}
                 className={`p-4 border-2 rounded-xl transition-all text-left ${
-                  extractionMode === 'fast'
+                  value.extractionMode === 'fast'
                     ? 'border-teal-500 bg-teal-50'
                     : 'border-gray-200 hover:border-gray-300'
                 }`}
               >
                 <Zap className={`w-5 h-5 mb-2 ${
-                  extractionMode === 'fast' ? 'text-teal-600' : 'text-gray-600'
+                  value.extractionMode === 'fast' ? 'text-teal-600' : 'text-gray-600'
                 }`} />
                 <div className="font-medium text-gray-900">Fast</div>
                 <div className="text-xs text-gray-500">Quick processing</div>
@@ -69,13 +89,13 @@ export function AdvancedSettings() {
               <button
                 onClick={() => setExtractionMode('accurate')}
                 className={`p-4 border-2 rounded-xl transition-all text-left ${
-                  extractionMode === 'accurate'
+                  value.extractionMode === 'accurate'
                     ? 'border-teal-500 bg-teal-50'
                     : 'border-gray-200 hover:border-gray-300'
                 }`}
               >
                 <Target className={`w-5 h-5 mb-2 ${
-                  extractionMode === 'accurate' ? 'text-teal-600' : 'text-gray-600'
+                  value.extractionMode === 'accurate' ? 'text-teal-600' : 'text-gray-600'
                 }`} />
                 <div className="font-medium text-gray-900">High Accuracy</div>
                 <div className="text-xs text-gray-500">Detailed analysis</div>
@@ -90,13 +110,13 @@ export function AdvancedSettings() {
               <div className="text-xs text-gray-500">Start extraction immediately</div>
             </div>
             <button
-              onClick={() => setAutoProcess(!autoProcess)}
+              onClick={toggleAutoProcess}
               className={`relative w-12 h-6 rounded-full transition-colors ${
-                autoProcess ? 'bg-teal-500' : 'bg-gray-300'
+                value.autoProcess ? 'bg-teal-500' : 'bg-gray-300'
               }`}
             >
               <motion.div
-                animate={{ x: autoProcess ? 24 : 0 }}
+                animate={{ x: value.autoProcess ? 24 : 0 }}
                 transition={{ type: 'spring', stiffness: 500, damping: 30 }}
                 className="absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow-md"
               />
@@ -110,13 +130,13 @@ export function AdvancedSettings() {
               <div className="text-xs text-gray-500">Verify extracted data accuracy</div>
             </div>
             <button
-              onClick={() => setValidation(!validation)}
+              onClick={toggleValidation}
               className={`relative w-12 h-6 rounded-full transition-colors ${
-                validation ? 'bg-teal-500' : 'bg-gray-300'
+                value.validation ? 'bg-teal-500' : 'bg-gray-300'
               }`}
             >
               <motion.div
-                animate={{ x: validation ? 24 : 0 }}
+                animate={{ x: value.validation ? 24 : 0 }}
                 transition={{ type: 'spring', stiffness: 500, damping: 30 }}
                 className="absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow-md"
               />

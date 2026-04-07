@@ -8,6 +8,7 @@ import {
 } from '../controllers/document.controller';
 import { protect } from '../middlewares/auth.middleware';
 import { upload } from '../middlewares/upload.middleware';
+import { uploadRateLimiter } from '../middlewares/rateLimit.middleware';
 
 const router = Router();
 
@@ -15,6 +16,7 @@ router.use(protect);
 
 router.post(
   '/',
+  uploadRateLimiter,
   upload.fields([
     { name: 'files', maxCount: 50 },
     { name: 'file', maxCount: 1 },

@@ -9,6 +9,7 @@ import { ErrorTable, ErrorDocument } from '../components/features/error-reports/
 import { ErrorBulkActionBar } from '../components/features/error-reports/ErrorBulkActionBar';
 import { HighFailureAlert } from '../components/features/error-reports/HighFailureAlert';
 import { NoErrorsState } from '../components/features/error-reports/NoErrorsState';
+import { confirmAction } from '../services/feedback';
 import {
   bulkDeleteErrors,
   bulkRetryErrors,
@@ -138,7 +139,7 @@ export default function ErrorReportsPage() {
   };
 
   const handleDeleteSelected = async () => {
-    if (!window.confirm(`Are you sure you want to delete ${selectedIds.length} documents?`)) {
+    if (!confirmAction(`Are you sure you want to delete ${selectedIds.length} documents?`)) {
       return;
     }
 
@@ -148,7 +149,7 @@ export default function ErrorReportsPage() {
   };
 
   const handleRetryAll = async () => {
-    if (!window.confirm(`Retry all ${failedCount} failed documents?`)) {
+    if (!confirmAction(`Retry all ${failedCount} failed documents?`)) {
       return;
     }
 
@@ -168,7 +169,7 @@ export default function ErrorReportsPage() {
   };
 
   const handleDelete = async (id: string) => {
-    if (!window.confirm('Are you sure you want to delete this document?')) {
+    if (!confirmAction('Are you sure you want to delete this document?')) {
       return;
     }
 

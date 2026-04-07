@@ -35,10 +35,42 @@ export interface IDocument extends Document {
   processingTimeMs?: number;
   promptVersion?: number;
   rawText?: string;
+  processingOptions?: {
+    autoProcess: boolean;
+    extractionMode: 'fast' | 'accurate';
+    runValidation: boolean;
+  };
+  resultPayload?: {
+    extractedData: IExtractedData;
+    validation: {
+      normalizedData: IExtractedData;
+      confidenceScore: number;
+      validationErrors: IValidationError[];
+      isValid: boolean;
+      extractionMethod: string;
+    };
+    rawText: string;
+    promptVersion: number | null;
+    processingTimeMs: number;
+    extractionMethod: string;
+    manuallyEdited?: boolean;
+    manualEdits?: Array<{
+      editedAt: Date;
+      editedBy?: mongoose.Types.ObjectId | null;
+      changedFields: string[];
+    }>;
+  };
   uploadedBy?: mongoose.Types.ObjectId;
   processingStartedAt?: Date;
   processedAt?: Date;
   errorMessage?: string;
+  extractionMethod?: 'llm' | 'heuristic' | 'ocr_heuristic' | 'manual' | null;
+  manuallyEdited?: boolean;
+  manualEdits?: Array<{
+    editedAt: Date;
+    editedBy?: mongoose.Types.ObjectId | null;
+    changedFields: string[];
+  }>;
   retryCount?: number;
   createdAt: Date;
   updatedAt: Date;
@@ -83,6 +115,35 @@ const DocumentSchema: Schema = new Schema({
   processingTimeMs: { type: Number, default: null },
   promptVersion: { type: Number, default: null },
   rawText: { type: String, default: '' },
+  processingOptions: {
+    autoProcess: { type: Boolean, default: true },
+    extractionMode: {
+      type: String,
+      enum: ['fast', 'accurate'],
+      default: 'accurate',
+    },
+    runValidation: { type: Boolean, default: true },
+  },
+  resultPayload: { type: Schema.Types.Mixed, default: null },
+  extractionMethod: {
+    type: String,
+    enum: ['llm', 'heuristic', 'ocr_heuristic', 'manual'],
+    default: null,
+  },
+  manuallyEdited: { type: Boolean, default: false },
+  manualEdits: {
+    type: [
+      new Schema(
+        {
+          editedAt: { type: Date, required: true, default: Date.now },
+          editedBy: { type: Schema.Types.ObjectId, ref: 'User', default: null },
+          changedFields: { type: [String], default: [] },
+        },
+        { _id: false }
+      ),
+    ],
+    default: [],
+  },
   uploadedBy: { type: Schema.Types.ObjectId, ref: 'User', default: null },
   processingStartedAt: { type: Date, default: null },
   processedAt: { type: Date, default: null },

@@ -1,12 +1,22 @@
 const CURRENCY_MAP: Record<string, string> = {
   INR: 'INR',
   RS: 'INR',
+  RSINR: 'INR',
   INRR: 'INR',
   RUPEES: 'INR',
   RUPEE: 'INR',
   USD: 'USD',
   DOLLAR: 'USD',
   DOLLARS: 'USD',
+  CAD: 'CAD',
+  CANADIANDOLLAR: 'CAD',
+  CANADIANDOLLARS: 'CAD',
+  SGD: 'SGD',
+  SINGAPOREDOLLAR: 'SGD',
+  SINGAPOREDOLLARS: 'SGD',
+  AUD: 'AUD',
+  AUSTRALIANDOLLAR: 'AUD',
+  AUSTRALIANDOLLARS: 'AUD',
   EUR: 'EUR',
   EURO: 'EUR',
   EUROS: 'EUR',
@@ -50,6 +60,22 @@ export function normalizeCurrency(value: string | null | undefined): string | nu
 
   if (cleaned.includes('₹')) {
     return 'INR';
+  }
+
+  if (/\bRS\.?\b/i.test(cleaned)) {
+    return 'INR';
+  }
+
+  if (/S\$/i.test(cleaned) || /\bSGD\b/i.test(cleaned)) {
+    return 'SGD';
+  }
+
+  if (/A\$/i.test(cleaned) || /\bAUD\b/i.test(cleaned)) {
+    return 'AUD';
+  }
+
+  if (/C\$/i.test(cleaned) || /\bCAD\b/i.test(cleaned)) {
+    return 'CAD';
   }
 
   if (cleaned.includes('$')) {

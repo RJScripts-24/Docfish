@@ -1,7 +1,9 @@
 import { Request, Response } from 'express';
+import mongoose from 'mongoose';
 import extractionService from '../services/extraction.service';
 import Document from '../models/Document.model';
 import validationService from '../services/validation.service';
+import storageService from '../services/storage.service';
 
 const collectUploadedFiles = (req: Request): Express.Multer.File[] => {
   if (Array.isArray(req.files)) {
@@ -137,22 +139,64 @@ export const updateInvoiceCorrections = async (req: Request, res: Response): Pro
     }
 
     if (extractedData && typeof extractedData === 'object') {
+      const changedFields = Object.keys(extractedData);
+
       document.extractedData = {
         ...document.extractedData,
         ...extractedData,
       };
 
-      const validation = validationService.validate(document.extractedData);
+      const validation = validationService.validate(document.extractedData, {
+        extractionMethod: 'manual',
+      });
 
       document.extractedData = validation.normalizedData;
       document.validationErrors = validation.validationErrors;
       document.confidenceScore = validation.confidenceScore;
       document.status = 'PROCESSED';
+      document.extractionMethod = 'manual';
+      document.manuallyEdited = true;
+      const editedBy =
+        req.user?.userId && mongoose.Types.ObjectId.isValid(req.user.userId)
+          ? new mongoose.Types.ObjectId(req.user.userId)
+          : null;
+      document.manualEdits = [
+        ...(document.manualEdits || []),
+        {
+          editedAt: new Date(),
+          editedBy,
+          changedFields,
+        },
+      ];
       document.processedAt = new Date();
       document.errorMessage = null;
+
+      document.resultPayload = {
+        extractedData: document.extractedData,
+        validation: {
+          normalizedData: document.extractedData,
+          confidenceScore: document.confidenceScore,
+          validationErrors: document.validationErrors,
+          isValid: (document.validationErrors || []).length === 0,
+          extractionMethod: document.extractionMethod || 'manual',
+        },
+        rawText: document.rawText || '',
+        promptVersion: document.promptVersion || null,
+        processingTimeMs: document.processingTimeMs || 0,
+        extractionMethod: document.extractionMethod || 'manual',
+        manuallyEdited: document.manuallyEdited || false,
+        manualEdits: document.manualEdits || [],
+      } as any;
     }
 
     const updated = await document.save();
+    const persistedPayload = (updated as any).resultPayload || (document as any).resultPayload;
+
+    if (persistedPayload) {
+      const persistedId = String((updated as any)._id || (updated as any).id || id);
+      await storageService.saveJsonResult(persistedId, persistedPayload);
+    }
+
     res.status(200).json(updated);
   } catch (error: any) {
     res.status(500).json({ error: error.message });

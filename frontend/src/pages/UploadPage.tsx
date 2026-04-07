@@ -1,16 +1,30 @@
 import { DashboardPageLayout } from '../components/layout/DashboardPageLayout';
 import { UploadZone, FileListItem } from '../components/features/upload/UploadComponents';
-import { AdvancedSettings } from '../components/features/upload/AdvancedSettings';
+import { AdvancedSettings, AdvancedUploadSettings } from '../components/features/upload/AdvancedSettings';
 import { RecentUploads } from '../components/features/upload/RecentUploads';
 import { motion } from 'motion/react';
 import { Sparkles, Trash2, ExternalLink } from 'lucide-react';
 import { Link, useNavigate } from 'react-router';
+import { useState } from 'react';
 import { useUploadQueue } from '../hooks/useUploadQueue';
 import { timeAgo } from '../lib/format';
 
 export default function UploadPage() {
   const navigate = useNavigate();
   const { uploadedFiles, completedCount, processingCount, addFiles, removeFile, clearAll } = useUploadQueue();
+  const [settings, setSettings] = useState<AdvancedUploadSettings>({
+    extractionMode: 'accurate',
+    autoProcess: true,
+    validation: true,
+  });
+
+  const handleFilesAdded = (files: File[]) => {
+    void addFiles(files, {
+      autoProcess: settings.autoProcess,
+      extractionMode: settings.extractionMode,
+      runValidation: settings.validation,
+    });
+  };
 
   const handleStartProcessing = () => {
     navigate('/documents');
@@ -60,7 +74,7 @@ export default function UploadPage() {
             {/* Main Upload Area */}
             <div className="lg:col-span-2 space-y-6">
               {/* Upload Zone */}
-              <UploadZone onFilesAdded={addFiles} />
+              <UploadZone onFilesAdded={handleFilesAdded} />
 
               {/* Uploaded Files List */}
               {uploadedFiles.length > 0 && (
@@ -118,7 +132,7 @@ export default function UploadPage() {
               )}
 
               {/* Advanced Settings */}
-              <AdvancedSettings />
+              <AdvancedSettings value={settings} onChange={setSettings} />
             </div>
 
             {/* Sidebar - Recent Uploads */}

@@ -7,11 +7,11 @@ import { ExtractedDataPanel } from '../components/features/document-review/Extra
 import {
   downloadDocumentJson,
   getDocumentDetails,
-  getDocumentPdfUrl,
   reprocessDocument,
   updateDocument,
 } from '../lib/api';
 import { DocumentDetails, EditableLineItem, ExtractedField } from '../lib/types';
+import { confirmAction } from '../services/feedback';
 
 function toEditableFields(document: DocumentDetails): Record<string, ExtractedField> {
   return Object.fromEntries(
@@ -36,6 +36,33 @@ function toSnapshot(fields: Record<string, ExtractedField>, lineItems: EditableL
       total: item.total,
     })),
   });
+}
+
+function buildEditedExportPayloadFromDocument(document: DocumentDetails) {
+  return {
+    id: document.id,
+    status: document.status,
+    processingTime: document.processingTime,
+    overallConfidence: document.overallConfidence,
+    exportedAt: new Date().toISOString(),
+    extractedFields: Object.fromEntries(Object.entries(document.extractedFields).map(([fieldKey, field]) => [fieldKey, field.value || null])),
+    lineItems: document.lineItems.map((item) => ({
+      description: item.description,
+      quantity: item.quantity,
+      unitPrice: item.unitPrice,
+      total: item.total,
+    })),
+    validationResults: document.validationResults,
+  };
+}
+
+function parseNullableNumber(value: string): number | null {
+  if (value.trim() === '') {
+    return null;
+  }
+
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : null;
 }
 
 export default function DocumentReviewPage() {
@@ -139,15 +166,17 @@ export default function DocumentReviewPage() {
 
         const nextItem = {
           ...item,
-          [field]: field === 'description' ? value : Number(value || 0),
+          [field]: field === 'description' ? value : parseNullableNumber(value),
         };
 
         if (field === 'quantity' || field === 'unitPrice') {
-          nextItem.total = Number((Number(nextItem.quantity) * Number(nextItem.unitPrice)).toFixed(2));
+          if (nextItem.quantity !== null && nextItem.unitPrice !== null) {
+            nextItem.total = Number((nextItem.quantity * nextItem.unitPrice).toFixed(2));
+          }
         }
 
         if (field === 'total') {
-          nextItem.total = Number(value || 0);
+          nextItem.total = parseNullableNumber(value);
         }
 
         return nextItem;
@@ -161,9 +190,9 @@ export default function DocumentReviewPage() {
       {
         id: Math.max(0, ...prev.map((item) => item.id)) + 1,
         description: '',
-        quantity: 0,
-        unitPrice: 0,
-        total: 0,
+        quantity: null,
+        unitPrice: null,
+        total: null,
       },
     ]);
   };
@@ -172,9 +201,9 @@ export default function DocumentReviewPage() {
     setLineItems((prev) => prev.filter((item) => item.id !== lineItemId));
   };
 
-  const handleSaveChanges = async () => {
+  const handleSaveChanges = async (): Promise<DocumentDetails | null> => {
     if (!id || !document) {
-      return;
+      return null;
     }
 
     try {
@@ -188,25 +217,53 @@ export default function DocumentReviewPage() {
         ),
         lineItems: lineItems.map((item) => ({
           description: item.description,
-          quantity: Number(item.quantity || 0),
-          unitPrice: Number(item.unitPrice || 0),
-          total: Number(item.total || 0),
+          quantity: item.quantity,
+          unitPrice: item.unitPrice,
+          total: item.total,
         })),
       });
 
-      setDocument(updated);
-      setFields(toEditableFields(updated));
-      setLineItems(updated.lineItems);
+      // Re-read from backend so UI state reflects persisted database values.
+      const persisted = await getDocumentDetails(id);
+      setDocument(persisted);
+      setFields(toEditableFields(persisted));
+      setLineItems(persisted.lineItems);
       setInfoMessage('Changes saved successfully.');
+      return persisted;
     } catch (error) {
       setErrorMessage(error instanceof Error ? error.message : 'Failed to save changes.');
+      return null;
     } finally {
       setIsSaving(false);
     }
   };
 
+  const getLatestDocumentForExport = async (): Promise<DocumentDetails | null> => {
+    if (!id) {
+      return document;
+    }
+
+    if (hasChanges) {
+      const saved = await handleSaveChanges();
+      if (!saved) {
+        return null;
+      }
+    }
+
+    try {
+      const latest = await downloadDocumentJson(id);
+      setDocument(latest);
+      setFields(toEditableFields(latest));
+      setLineItems(latest.lineItems);
+      return latest;
+    } catch (error) {
+      setErrorMessage(error instanceof Error ? error.message : 'Failed to load latest saved document for export.');
+      return null;
+    }
+  };
+
   const handleReprocess = async () => {
-    if (!id || !window.confirm('Are you sure you want to reprocess this document?')) {
+    if (!id || !confirmAction('Are you sure you want to reprocess this document?')) {
       return;
     }
 
@@ -220,30 +277,126 @@ export default function DocumentReviewPage() {
     }
   };
 
-  const handleDownloadPDF = () => {
-    if (!document?.documentUrl) {
-      return;
-    }
-
-    window.open(getDocumentPdfUrl(document.documentUrl), '_blank', 'noopener,noreferrer');
-  };
-
-  const handleDownloadJSON = async () => {
-    if (!id) {
+  const handleDownloadPDF = async () => {
+    if (!document) {
       return;
     }
 
     try {
-      const payload = await downloadDocumentJson(id);
+      const { jsPDF } = await import('jspdf');
+      const latestDocument = await getLatestDocumentForExport();
+      if (!latestDocument) {
+        return;
+      }
+
+      const payload = buildEditedExportPayloadFromDocument(latestDocument);
+      const pdf = new jsPDF({ unit: 'pt', format: 'a4' });
+
+      const pageWidth = pdf.internal.pageSize.getWidth();
+      const pageHeight = pdf.internal.pageSize.getHeight();
+      const margin = 40;
+      const maxWidth = pageWidth - margin * 2;
+      let y = margin;
+
+      const ensureSpace = (height = 18) => {
+        if (y + height <= pageHeight - margin) {
+          return;
+        }
+
+        pdf.addPage();
+        y = margin;
+      };
+
+      const addHeading = (text: string) => {
+        ensureSpace(26);
+        pdf.setFont('helvetica', 'bold');
+        pdf.setFontSize(16);
+        pdf.text(text, margin, y);
+        y += 24;
+      };
+
+      const addParagraph = (text: string) => {
+        const lines = pdf.splitTextToSize(text, maxWidth) as string[];
+        ensureSpace(lines.length * 14 + 4);
+        pdf.setFont('helvetica', 'normal');
+        pdf.setFontSize(11);
+        pdf.text(lines, margin, y);
+        y += lines.length * 14 + 4;
+      };
+
+      const addKeyValue = (key: string, value: string) => {
+        ensureSpace(18);
+        pdf.setFont('helvetica', 'bold');
+        pdf.setFontSize(11);
+        pdf.text(`${key}:`, margin, y);
+
+        pdf.setFont('helvetica', 'normal');
+        const wrapped = pdf.splitTextToSize(value, maxWidth - 150) as string[];
+        pdf.text(wrapped, margin + 150, y);
+        y += Math.max(18, wrapped.length * 14);
+      };
+
+      addHeading('Docfish Invoice Correction Report');
+      addParagraph(`Document ID: ${payload.id}`);
+      addParagraph(`Exported at: ${payload.exportedAt}`);
+      addParagraph(`Status: ${payload.status}`);
+      addParagraph(`Confidence: ${payload.overallConfidence}%`);
+      addParagraph(`Processing Time: ${payload.processingTime || 'n/a'}`);
+
+      y += 8;
+      addHeading('Corrected Fields');
+      Object.entries(payload.extractedFields).forEach(([key, value]) => {
+        addKeyValue(key, value === null ? 'N/A' : String(value));
+      });
+
+      y += 8;
+      addHeading('Corrected Line Items');
+      if (payload.lineItems.length === 0) {
+        addParagraph('No line items present.');
+      } else {
+        addParagraph('Description | Quantity | Unit Price | Line Total');
+        payload.lineItems.forEach((item, index) => {
+          addParagraph(
+            `${index + 1}. ${item.description || 'Item'} | ${item.quantity ?? 'N/A'} | ${
+              item.unitPrice !== null ? item.unitPrice.toFixed(2) : 'N/A'
+            } | ${item.total !== null ? item.total.toFixed(2) : 'N/A'}`
+          );
+        });
+      }
+
+      y += 8;
+      addHeading('Validation Results');
+      payload.validationResults.forEach((result, index) => {
+        addParagraph(`${index + 1}. ${result.title}: ${result.message}`);
+      });
+
+      pdf.save(`document-${payload.id}-corrected.pdf`);
+    } catch (error) {
+      setErrorMessage(error instanceof Error ? error.message : 'Failed to download corrected PDF.');
+    }
+  };
+
+  const handleDownloadJSON = async () => {
+    if (!document) {
+      return;
+    }
+
+    try {
+      const latestDocument = await getLatestDocumentForExport();
+      if (!latestDocument) {
+        return;
+      }
+
+      const payload = buildEditedExportPayloadFromDocument(latestDocument);
       const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
       const url = URL.createObjectURL(blob);
       const anchor = window.document.createElement('a');
       anchor.href = url;
-      anchor.download = `document-${id}.json`;
+      anchor.download = `document-${payload.id}-corrected.json`;
       anchor.click();
       URL.revokeObjectURL(url);
     } catch (error) {
-      setErrorMessage(error instanceof Error ? error.message : 'Failed to download JSON.');
+      setErrorMessage(error instanceof Error ? error.message : 'Failed to download corrected JSON.');
     }
   };
 

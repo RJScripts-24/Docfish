@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { upload } from '../middlewares/upload.middleware';
 import { protect } from '../middlewares/auth.middleware';
+import { uploadRateLimiter } from '../middlewares/rateLimit.middleware';
 import {
   activatePromptV1,
   authGoogle,
@@ -46,8 +47,19 @@ router.post('/auth/logout', protect, authLogout);
 
 router.get('/documents', protect, listDocumentsV1);
 router.post(
+  '/documents',
+  protect,
+  uploadRateLimiter,
+  upload.fields([
+    { name: 'files', maxCount: 50 },
+    { name: 'file', maxCount: 1 },
+  ]),
+  uploadDocumentsV1
+);
+router.post(
   '/documents/upload',
   protect,
+  uploadRateLimiter,
   upload.fields([
     { name: 'files', maxCount: 50 },
     { name: 'file', maxCount: 1 },

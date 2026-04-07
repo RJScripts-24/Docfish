@@ -24,6 +24,12 @@ interface RequestOptions extends Omit<RequestInit, 'body'> {
   responseType?: ResponseType;
 }
 
+export interface UploadRequestOptions {
+  autoProcess?: boolean;
+  extractionMode?: 'fast' | 'accurate';
+  runValidation?: boolean;
+}
+
 export class ApiError extends Error {
   status: number;
 
@@ -154,12 +160,23 @@ export async function listDocuments(params: {
   return request<DocumentListResponse>(`/api/v1/documents?${searchParams.toString()}`);
 }
 
-export async function uploadDocuments(files: File[], autoProcess = true): Promise<{ uploads: UploadJob[] }> {
+export async function uploadDocuments(
+  files: File[],
+  options: UploadRequestOptions = {}
+): Promise<{ uploads: UploadJob[] }> {
   const formData = new FormData();
+  const {
+    autoProcess = true,
+    extractionMode = 'accurate',
+    runValidation = true,
+  } = options;
+
   files.forEach((file) => formData.append('files', file));
   formData.append('autoProcess', String(autoProcess));
+  formData.append('extractionMode', extractionMode);
+  formData.append('runValidation', String(runValidation));
 
-  return request<{ uploads: UploadJob[] }>('/api/v1/documents/upload', {
+  return request<{ uploads: UploadJob[] }>('/api/v1/documents', {
     method: 'POST',
     body: formData,
   });
@@ -177,7 +194,12 @@ export async function updateDocument(
   documentId: string,
   payload: {
     extractedFields: Record<string, string | null>;
-    lineItems: Array<{ description: string; quantity: number; unitPrice: number; total: number }>;
+    lineItems: Array<{
+      description: string;
+      quantity: number | null;
+      unitPrice: number | null;
+      total: number | null;
+    }>;
   }
 ): Promise<DocumentDetails> {
   return request<DocumentDetails>(`/api/v1/documents/${documentId}`, {
@@ -216,8 +238,10 @@ export async function downloadDocumentJson(documentId: string): Promise<Document
   return request<DocumentDetails>(`/api/v1/documents/${documentId}/download?format=json`);
 }
 
-export function getDocumentPdfUrl(documentUrl: string): string {
-  return documentUrl;
+export async function downloadDocumentPdf(documentId: string): Promise<Blob> {
+  return request<Blob>(`/api/v1/documents/${documentId}/download?format=pdf`, {
+    responseType: 'blob',
+  });
 }
 
 export async function listErrors(params: {

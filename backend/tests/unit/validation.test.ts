@@ -37,6 +37,34 @@ describe('validationService', () => {
         ],
       });
     });
+
+    it('normalizes line-item alias fields and derives missing totals', () => {
+      const result = validationService.normalizeExtractedData({
+        vendor_name: 'Acme Corp',
+        invoice_number: 'INV-1005',
+        invoice_date: '2026-03-12',
+        currency: 'USD',
+        total_amount: '100',
+        tax_amount: '0',
+        line_items: [
+          {
+            description: 'Service',
+            qty: '2',
+            unitPrice: '25',
+            total: null,
+          },
+        ],
+      });
+
+      expect(result.line_items).toEqual([
+        {
+          description: 'Service',
+          quantity: 2,
+          unit_price: 25,
+          line_total: 50,
+        },
+      ]);
+    });
   });
 
   describe('validate', () => {
@@ -185,6 +213,36 @@ describe('validationService', () => {
           expect.objectContaining({ field: 'invoice_date', code: 'MISSING_FIELD' }),
         ])
       );
+    });
+
+    it('applies lower confidence for heuristic extraction than llm extraction', () => {
+      const payload = {
+        vendor_name: 'Acme Corp',
+        invoice_number: 'INV-1006',
+        invoice_date: '2026-03-12',
+        currency: 'USD',
+        total_amount: 100,
+        tax_amount: 0,
+        line_items: [
+          {
+            description: 'Line 1',
+            quantity: 1,
+            unit_price: 100,
+            line_total: 100,
+          },
+        ],
+      };
+
+      const llmResult = validationService.validate(payload, { extractionMethod: 'llm' });
+      const heuristicResult = validationService.validate(payload, { extractionMethod: 'heuristic' });
+      const ocrHeuristicResult = validationService.validate(payload, {
+        extractionMethod: 'ocr_heuristic',
+      });
+
+      expect(llmResult.confidenceScore).toBeGreaterThan(heuristicResult.confidenceScore);
+      expect(heuristicResult.confidenceScore).toBeGreaterThan(ocrHeuristicResult.confidenceScore);
+      expect(heuristicResult.extractionMethod).toBe('heuristic');
+      expect(ocrHeuristicResult.extractionMethod).toBe('ocr_heuristic');
     });
   });
 });

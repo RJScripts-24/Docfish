@@ -18,7 +18,43 @@ export interface UpdatePromptInput {
 }
 
 class PromptService {
+  private getOwnerScope(userId?: string) {
+    return { createdBy: userId || null };
+  }
+
+  private getAccessibleScope(userId?: string) {
+    if (userId) {
+      return { $or: [{ createdBy: userId }, { createdBy: null }] };
+    }
+
+    return { createdBy: null };
+  }
+
+  private async ensureUniversalDefaultPrompt(name = 'invoice_extraction') {
+    const existingUniversal = await Prompt.findOne({ name, createdBy: null, isActive: true }).sort({ version: -1 });
+
+    if (existingUniversal) {
+      return existingUniversal;
+    }
+
+    const latestPromptForName = await Prompt.findOne({ name }).sort({ version: -1 }).lean();
+    const nextVersion = latestPromptForName ? Number(latestPromptForName.version || 0) + 1 : 1;
+
+    return Prompt.create({
+      name,
+      version: nextVersion,
+      systemPrompt:
+        'You extract invoice data into structured JSON with strong field fidelity.',
+      userPrompt:
+        'Extract vendor_name, invoice_number, invoice_date, currency, total_amount, tax_amount, and line_items from the provided invoice text. Return JSON only.',
+      description: 'Universal default invoice extraction prompt',
+      isActive: true,
+      createdBy: null,
+    });
+  }
+
   async createPromptVersion(input: CreatePromptInput) {
+    const ownerScope = this.getOwnerScope(input.createdBy);
     const latestPrompt = await Prompt.findOne({ name: input.name })
       .sort({ version: -1 })
       .lean();
@@ -27,7 +63,7 @@ class PromptService {
 
     if (input.isActive) {
       await Prompt.updateMany(
-        { name: input.name, isActive: true },
+        { name: input.name, isActive: true, ...ownerScope },
         { $set: { isActive: false } }
       );
     }
@@ -39,19 +75,22 @@ class PromptService {
       userPrompt: input.userPrompt,
       description: input.description || '',
       isActive: input.isActive ?? true,
-      createdBy: input.createdBy || null,
+      ...ownerScope,
     });
 
     return prompt;
   }
 
-  async listPromptVersions(name?: string) {
-    const query = name ? { name } : {};
-    return Prompt.find(query).sort({ name: 1, version: -1 });
+  async listPromptVersions(name?: string, userId?: string) {
+    await this.ensureUniversalDefaultPrompt(name || 'invoice_extraction');
+    const accessibleScope = this.getAccessibleScope(userId);
+    const query = name ? { ...accessibleScope, name } : accessibleScope;
+    return Prompt.find(query).sort({ createdBy: 1, name: 1, version: -1 });
   }
 
-  async getPromptById(promptId: string) {
-    const prompt = await Prompt.findById(promptId);
+  async getPromptById(promptId: string, userId?: string) {
+    const accessibleScope = this.getAccessibleScope(userId);
+    const prompt = await Prompt.findOne({ _id: promptId, ...accessibleScope });
 
     if (!prompt) {
       throw new Error('Prompt not found');
@@ -60,35 +99,52 @@ class PromptService {
     return prompt;
   }
 
-  async getActivePrompt(name = 'invoice_extraction') {
-    let prompt = await Prompt.findOne({ name, isActive: true }).sort({
+  async getOwnedPromptById(promptId: string, userId?: string) {
+    const ownerScope = this.getOwnerScope(userId);
+    const prompt = await Prompt.findOne({ _id: promptId, ...ownerScope });
+
+    if (!prompt) {
+      throw new Error('Prompt not found');
+    }
+
+    return prompt;
+  }
+
+  async getActivePrompt(name = 'invoice_extraction', userId?: string) {
+    await this.ensureUniversalDefaultPrompt(name);
+    const ownerScope = this.getOwnerScope(userId);
+
+    let prompt = await Prompt.findOne({ name, isActive: true, ...ownerScope }).sort({
       version: -1,
     });
 
+    if (!prompt && userId) {
+      prompt = await Prompt.findOne({ name, isActive: true, createdBy: null }).sort({
+        version: -1,
+      });
+    }
+
     if (!prompt) {
-      prompt = await Prompt.findOne({ isActive: true }).sort({
+      prompt = await Prompt.findOne({ isActive: true, ...ownerScope }).sort({
+        updatedAt: -1,
+      });
+    }
+
+    if (!prompt && userId) {
+      prompt = await Prompt.findOne({ isActive: true, createdBy: null }).sort({
         updatedAt: -1,
       });
     }
 
     if (!prompt) {
       try {
-        prompt = await Prompt.create({
-          name,
-          version: 1,
-          systemPrompt:
-            'You extract invoice data into structured JSON with strong field fidelity.',
-          userPrompt:
-            'Extract vendor_name, invoice_number, invoice_date, currency, total_amount, tax_amount, and line_items from the provided invoice text. Return JSON only.',
-          description: 'Default invoice extraction prompt',
-          isActive: true,
-        });
+        prompt = await this.ensureUniversalDefaultPrompt(name);
       } catch (error: any) {
         if (error?.code !== 11000) {
           throw error;
         }
 
-        prompt = await Prompt.findOne({ name }).sort({ version: -1 });
+        prompt = await Prompt.findOne({ name, createdBy: null }).sort({ version: -1 });
 
         if (!prompt) {
           throw error;
@@ -99,11 +155,12 @@ class PromptService {
     return prompt;
   }
 
-  async activatePrompt(promptId: string) {
-    const prompt = await this.getPromptById(promptId);
+  async activatePrompt(promptId: string, userId?: string) {
+    const prompt = await this.getOwnedPromptById(promptId, userId);
+    const ownerScope = this.getOwnerScope(userId);
 
     await Prompt.updateMany(
-      { name: prompt.name, isActive: true },
+      { name: prompt.name, isActive: true, ...ownerScope },
       { $set: { isActive: false } }
     );
 
@@ -113,8 +170,9 @@ class PromptService {
     return prompt;
   }
 
-  async updatePrompt(promptId: string, input: UpdatePromptInput) {
-    const prompt = await this.getPromptById(promptId);
+  async updatePrompt(promptId: string, input: UpdatePromptInput, userId?: string) {
+    const prompt = await this.getOwnedPromptById(promptId, userId);
+    const ownerScope = this.getOwnerScope(userId);
 
     if (typeof input.name === 'string') {
       prompt.name = input.name;
@@ -134,7 +192,7 @@ class PromptService {
 
     if (typeof input.isActive === 'boolean' && input.isActive) {
       await Prompt.updateMany(
-        { name: prompt.name, isActive: true, _id: { $ne: prompt._id } },
+        { name: prompt.name, isActive: true, _id: { $ne: prompt._id }, ...ownerScope },
         { $set: { isActive: false } }
       );
     }
@@ -148,9 +206,10 @@ class PromptService {
     return prompt;
   }
 
-  async deletePrompt(promptId: string) {
-    const prompt = await this.getPromptById(promptId);
-    await Prompt.findByIdAndDelete(promptId);
+  async deletePrompt(promptId: string, userId?: string) {
+    const prompt = await this.getOwnedPromptById(promptId, userId);
+    const ownerScope = this.getOwnerScope(userId);
+    await Prompt.findOneAndDelete({ _id: promptId, ...ownerScope });
     return prompt;
   }
 }

@@ -2,6 +2,10 @@ openapi: 3.0.3
 info:
 	title: Docfish Backend API
 	version: 1.0.0
+	description: |
+		Contract-first API for Docfish invoice extraction.
+
+		Upload processing is asynchronous and returns `202 Accepted` with upload job metadata.
 servers:
 	- url: http://localhost:5000
 paths:
@@ -11,32 +15,120 @@ paths:
 			responses:
 				'200':
 					description: Service is healthy
-	/api/auth/register:
+
+	/api/v1/documents:
 		post:
-			summary: Register a user
+			summary: Upload invoice PDFs (single or bulk, async)
+			description: Returns immediately with upload job metadata. Processing continues in background.
+			requestBody:
+				required: true
+				content:
+					multipart/form-data:
+						schema:
+							type: object
+							properties:
+								files:
+									type: array
+									items:
+										type: string
+										format: binary
+								file:
+									type: string
+									format: binary
+								autoProcess:
+									type: boolean
+									default: true
+								extractionMode:
+									type: string
+									enum: [fast, accurate]
+									default: accurate
+								runValidation:
+									type: boolean
+									default: true
 			responses:
-				'201':
-					description: User created
-	/api/auth/login:
+				'202':
+					description: Upload accepted; jobs created
+					content:
+						application/json:
+							schema:
+								type: object
+								properties:
+									uploads:
+										type: array
+										items:
+											type: object
+											properties:
+												id:
+													type: string
+												name:
+													type: string
+												size:
+													type: number
+												status:
+													type: string
+													enum: [uploading, uploaded, processing, done, error]
+												progress:
+													type: number
+												documentId:
+													type: string
+												errorMessage:
+													type: string
+
+	/api/v1/documents/upload:
 		post:
-			summary: Login a user
+			summary: Backward-compatible async upload alias
+			description: Alias for `/api/v1/documents` with the same async `202 Accepted` contract.
+			responses:
+				'202':
+					description: Upload accepted
+
+	/api/v1/uploads/{uploadId}/status:
+		get:
+			summary: Get async upload job status
+			parameters:
+				- in: path
+					name: uploadId
+					required: true
+					schema:
+						type: string
 			responses:
 				'200':
-					description: Authentication successful
-	/api/documents:
+					description: Upload status payload
+
+	/api/v1/documents/{id}/download:
 		get:
-			summary: List invoices
+			summary: Download source PDF or structured JSON
+			parameters:
+				- in: path
+					name: id
+					required: true
+					schema:
+						type: string
+				- in: query
+					name: format
+					required: true
+					schema:
+						type: string
+						enum: [pdf, json]
 			responses:
 				'200':
-					description: List of documents
+					description: Downloaded content
+				'400':
+					description: Invalid format
+
+	/api/v1/prompts/{id}/test:
 		post:
-			summary: Upload invoice files (single or bulk)
-			responses:
-				'201':
-					description: Documents uploaded and processing started
-	/api/documents/{id}:
-		get:
-			summary: Get invoice by id
+			summary: Test a specific prompt version against sample invoice text
+			requestBody:
+				required: true
+				content:
+					application/json:
+						schema:
+							type: object
+							required: [sampleText]
+							properties:
+								sampleText:
+									type: string
 			parameters:
 				- in: path
 					name: id
@@ -45,80 +137,58 @@ paths:
 						type: string
 			responses:
 				'200':
-					description: Document details
-		patch:
-			summary: Apply manual extraction corrections
-			parameters:
-				- in: path
-					name: id
-					required: true
-					schema:
-						type: string
-			responses:
-				'200':
-					description: Document updated
-	/api/documents/reprocess/{id}:
-		post:
-			summary: Reprocess invoice by id
-			parameters:
-				- in: path
-					name: id
-					required: true
-					schema:
-						type: string
-			responses:
-				'200':
-					description: Document reprocessed
-	/api/reprocess/{id}:
-		post:
-			summary: Reprocess invoice by id (compatibility endpoint)
-			parameters:
-				- in: path
-					name: id
-					required: true
-					schema:
-						type: string
-			responses:
-				'200':
-					description: Document reprocessed
-	/api/metrics:
-		get:
-			summary: Get processing metrics
-			responses:
-				'200':
-					description: Metrics payload
-	/api/metrics/errors:
-		get:
-			summary: Get validation/processing error report for dashboard
-			responses:
-				'200':
-					description: Error report payload
-	/api/prompts:
-		get:
-			summary: List prompts
-			responses:
-				'200':
-					description: Prompt versions
-		post:
-			summary: Create prompt version
-			responses:
-				'201':
-					description: Prompt created
-	/api/prompts/active:
-		get:
-			summary: Get active extraction prompt
-			responses:
-				'200':
-					description: Active prompt
-	/api/prompts/{id}/activate:
-		post:
-			summary: Activate prompt by id
-			parameters:
-				- in: path
-					name: id
-					required: true
-					schema:
-						type: string
-			responses:
-				'200':
-					description: Prompt activated
+					description: Prompt test result
+					content:
+						application/json:
+							schema:
+								type: object
+								properties:
+									promptId:
+										type: string
+									promptVersion:
+										type: integer
+									extractionMethod:
+										type: string
+										enum: [llm, heuristic, ocr_heuristic, manual]
+									modelBacked:
+										type: boolean
+									degradedMode:
+										type: boolean
+									degradedModeReason:
+										type: string
+										nullable: true
+									processingTime:
+										type: string
+									processingTimeMs:
+										type: integer
+									overallConfidence:
+										type: number
+									normalizedOutput:
+										type: object
+									rawModelOutput:
+										type: string
+										nullable: true
+									rawOutput:
+										type: string
+									extractedFields:
+										type: object
+									validationResults:
+										type: array
+										items:
+											type: object
+											properties:
+												passed:
+													type: boolean
+												title:
+													type: string
+												message:
+													type: string
+												severity:
+													type: string
+													enum: [ok, warning, error]
+												field:
+													type: string
+													nullable: true
+												code:
+													type: string
+													nullable: true

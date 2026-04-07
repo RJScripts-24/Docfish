@@ -1,0 +1,52 @@
+{
+  "sample-01.pdf": {
+    "vendor_name": "Velocity Cargo Solutions",
+    "invoice_number": "BILL-96477",
+    "invoice_date": null,
+    "currency": "USD",
+    "total_amount": 579.11,
+    "tax_amount": null,
+    "line_items": [
+      {
+        "description": "Warehouse Handling",
+        "quantity": 2,
+        "unit_price": 257.0,
+        "line_total": 514.0
+      },
+      {
+        "description": "Warehouse Handling",
+        "quantity": 1,
+        "unit_price": 65.11,
+        "line_total": 65.11
+      }
+    ]
+  },
+  "sample-02": {
+    "vendor_name": "Evergreen Warehousing",
+    "invoice_number": "DOC-88134",
+    "invoice_date": null,
+    "currency": "INR",
+    "total_amount": 1895.88,
+    "tax_amount": null,
+    "line_items": [
+      {
+        "description": "Freight Charges",
+        "quantity": 2,
+        "unit_price": 305.66,
+        "line_total": 611.32
+      },
+      {
+        "description": "Custom Clearance",
+        "quantity": 1,
+        "unit_price": 487.07,
+        "line_total": 487.07
+      },
+      {
+        "description": "Warehouse Handling",
+        "quantity": 3,
+        "unit_price": 265.83,
+        "line_total": 797.49
+      }
+    ]
+  }
+}

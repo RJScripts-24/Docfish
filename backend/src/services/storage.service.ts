@@ -59,6 +59,19 @@ class StorageService {
     return outputPath;
   }
 
+  async deleteJsonResult(documentId: string) {
+    const resultsDir = path.join(this.uploadRoot, 'results');
+    const outputPath = path.join(resultsDir, `${documentId}.json`);
+
+    try {
+      await fs.unlink(outputPath);
+    } catch (error: any) {
+      if (error.code !== 'ENOENT') {
+        throw error;
+      }
+    }
+  }
+
   async readFileBuffer(filePath: string) {
     return fs.readFile(filePath);
   }

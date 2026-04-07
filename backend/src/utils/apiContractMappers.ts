@@ -11,6 +11,12 @@ interface DocumentLike {
   extractedData?: any;
   validationErrors?: Array<{ code?: string; message?: string }>;
   errorMessage?: string | null;
+  extractionMethod?: 'llm' | 'heuristic' | 'ocr_heuristic' | 'manual' | null;
+  manuallyEdited?: boolean;
+  manualEdits?: Array<{ editedAt?: Date | string }>;
+  processingOptions?: {
+    runValidation?: boolean;
+  };
   updatedAt?: Date | string;
   retryCount?: number;
   fileSizeBytes?: number;
@@ -37,11 +43,11 @@ const toStringValue = (value: unknown): string | null => {
   return String(value);
 };
 
-const toDateOnly = (value: unknown): string => {
+const toDateOnly = (value: unknown): string | null => {
   const raw = toStringValue(value);
 
   if (!raw) {
-    return new Date().toISOString().slice(0, 10);
+    return null;
   }
 
   if (/^\d{4}-\d{2}-\d{2}$/.test(raw)) {
@@ -50,15 +56,15 @@ const toDateOnly = (value: unknown): string => {
 
   const parsed = new Date(raw);
   if (Number.isNaN(parsed.getTime())) {
-    return new Date().toISOString().slice(0, 10);
+    return raw;
   }
 
   return parsed.toISOString().slice(0, 10);
 };
 
-export const toProcessingTime = (processingTimeMs?: number | null) => {
+export const toProcessingTime = (processingTimeMs?: number | null): string | null => {
   if (!processingTimeMs || processingTimeMs <= 0) {
-    return '0.0s';
+    return null;
   }
 
   return `${(processingTimeMs / 1000).toFixed(1)}s`;
@@ -158,9 +164,10 @@ export const toInvoiceDocument = (doc: DocumentLike) => {
   return {
     id: String(doc._id),
     name: doc.originalFilename || 'unknown.pdf',
-    vendor: toStringValue(doc.extractedData?.vendor_name) || 'Unknown Vendor',
+    vendor: toStringValue(doc.extractedData?.vendor_name),
     invoiceDate: toDateOnly(doc.extractedData?.invoice_date),
-    amount: Number(doc.extractedData?.total_amount || 0),
+    amount:
+      typeof doc.extractedData?.total_amount === 'number' ? doc.extractedData.total_amount : null,
     status: toPublicStatus(doc),
     confidence,
     processingTime: toProcessingTime(doc.processingTimeMs),
@@ -171,7 +178,6 @@ export const toDocumentDetails = (req: Request, doc: DocumentLike) => {
   const confidence = toConfidencePercent(doc.confidenceScore);
   const lineItems = Array.isArray(doc.extractedData?.line_items) ? doc.extractedData.line_items : [];
   const validationErrors = Array.isArray(doc.validationErrors) ? doc.validationErrors : [];
-
   const validationResults =
     validationErrors.length > 0
       ? validationErrors.map((error: any) => ({
@@ -180,11 +186,20 @@ export const toDocumentDetails = (req: Request, doc: DocumentLike) => {
           message: error.message || 'Validation failed',
           severity: toValidationSeverity(error.code),
         }))
+      : doc.processingOptions?.runValidation === false
+      ? [
+          {
+            passed: true,
+            title: 'VALIDATION SKIPPED',
+            message: 'Validation checks were disabled for this processing run.',
+            severity: 'warning',
+          },
+        ]
       : [
           {
             passed: true,
-            title: 'Total Amount Verified',
-            message: 'Sum of line items matches total amount',
+            title: 'VALIDATION PASSED',
+            message: 'No validation errors were detected by the backend.',
             severity: 'ok',
           },
         ];
@@ -194,31 +209,27 @@ export const toDocumentDetails = (req: Request, doc: DocumentLike) => {
     status: toPublicStatus(doc),
     processingTime: toProcessingTime(doc.processingTimeMs),
     overallConfidence: confidence,
+    extractionMethod: doc.extractionMethod || null,
+    manuallyEdited: Boolean(doc.manuallyEdited),
+    lastManualEditAt:
+      Array.isArray(doc.manualEdits) && doc.manualEdits.length > 0
+        ? new Date(doc.manualEdits[doc.manualEdits.length - 1]?.editedAt || Date.now()).toISOString()
+        : null,
     documentUrl: buildDocumentUrl(req, doc),
     extractedFields: {
       vendorName: toExtractedField(doc.extractedData?.vendor_name, confidence),
       invoiceNumber: toExtractedField(doc.extractedData?.invoice_number, confidence),
       invoiceDate: toExtractedField(doc.extractedData?.invoice_date, confidence),
-      dueDate: toExtractedField(null, confidence),
       currency: toExtractedField(doc.extractedData?.currency, confidence),
       totalAmount: toExtractedField(doc.extractedData?.total_amount, confidence),
       taxAmount: toExtractedField(doc.extractedData?.tax_amount, confidence),
-      taxRate: toExtractedField(null, confidence),
-      subtotal: toExtractedField(
-        typeof doc.extractedData?.total_amount === 'number' && typeof doc.extractedData?.tax_amount === 'number'
-          ? doc.extractedData.total_amount - doc.extractedData.tax_amount
-          : null,
-        confidence
-      ),
-      paymentTerms: toExtractedField(null, confidence),
-      notes: toExtractedField(null, confidence),
     },
     lineItems: lineItems.map((item: any, index: number) => ({
       id: index + 1,
       description: toStringValue(item?.description) || '',
-      quantity: Number(item?.quantity || 0),
-      unitPrice: Number(item?.unit_price || 0),
-      total: Number(item?.line_total || 0),
+      quantity: typeof item?.quantity === 'number' ? item.quantity : null,
+      unitPrice: typeof item?.unit_price === 'number' ? item.unit_price : null,
+      total: typeof item?.line_total === 'number' ? item.line_total : null,
     })),
     validationResults,
   };

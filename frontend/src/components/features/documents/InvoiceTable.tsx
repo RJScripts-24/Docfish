@@ -4,12 +4,12 @@ import { Eye, RefreshCw, Trash2, FileText } from 'lucide-react';
 export interface Invoice {
   id: string;
   name: string;
-  vendor: string;
-  invoiceDate: string;
-  amount: number;
+  vendor: string | null;
+  invoiceDate: string | null;
+  amount: number | null;
   status: 'success' | 'review' | 'failed';
   confidence: number;
-  processingTime: string;
+  processingTime: string | null;
 }
 
 interface InvoiceTableProps {
@@ -130,10 +130,10 @@ export function InvoiceTable({
                     </div>
                   </div>
                 </td>
-                <td className="px-3 py-4 text-sm font-semibold text-[var(--df-black)] whitespace-nowrap">{invoice.vendor}</td>
-                <td className="px-3 py-4 text-xs font-bold text-[var(--df-muted)] uppercase whitespace-nowrap">{invoice.processingTime}</td>
+                <td className="px-3 py-4 text-sm font-semibold text-[var(--df-black)] whitespace-nowrap">{invoice.vendor || '-'}</td>
+                <td className="px-3 py-4 text-xs font-bold text-[var(--df-muted)] uppercase whitespace-nowrap">{invoice.invoiceDate || '-'}</td>
                 <td className="px-3 py-4 text-sm font-extrabold text-[var(--df-black)] whitespace-nowrap">
-                  ${invoice.amount.toLocaleString()}
+                  {invoice.amount !== null ? `$${invoice.amount.toLocaleString()}` : '-'}
                 </td>
                 <td className="px-3 py-4 whitespace-nowrap">
                   <span
@@ -163,7 +163,7 @@ export function InvoiceTable({
                     </div>
                   </div>
                 </td>
-                <td className="px-3 py-4 text-xs font-bold text-[var(--df-muted)] uppercase whitespace-nowrap">{invoice.invoiceDate}</td>
+                <td className="px-3 py-4 text-xs font-bold text-[var(--df-muted)] uppercase whitespace-nowrap">{invoice.processingTime || '-'}</td>
                 <td className="px-3 py-4 whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
                   <div className="flex items-center justify-end gap-1">
                     <button

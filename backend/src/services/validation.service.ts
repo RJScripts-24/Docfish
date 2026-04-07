@@ -1,5 +1,7 @@
 import { normalizeCurrency, normalizeDate, normalizeNumber } from '../utils/normalizers';
 
+export type ExtractionMethod = 'llm' | 'heuristic' | 'ocr_heuristic' | 'manual';
+
 export interface LineItem {
   description: string;
   quantity: number | null;
@@ -50,6 +52,11 @@ export interface ValidationResult {
   confidenceScore: number;
   validationErrors: ValidationErrorItem[];
   isValid: boolean;
+  extractionMethod: ExtractionMethod;
+}
+
+interface ValidationOptions {
+  extractionMethod?: ExtractionMethod;
 }
 
 class ValidationService {
@@ -130,9 +137,10 @@ class ValidationService {
     };
   }
 
-  validate(data: Partial<RawExtractedInvoiceData>): ValidationResult {
+  validate(data: Partial<RawExtractedInvoiceData>, options: ValidationOptions = {}): ValidationResult {
     const normalizedData = this.normalizeExtractedData(data);
     const validationErrors: ValidationErrorItem[] = [];
+    const extractionMethod = options.extractionMethod || 'llm';
 
     for (const field of this.requiredFields) {
       const value = normalizedData[field];
@@ -215,7 +223,14 @@ class ValidationService {
       (error) => error.code === 'MISSING_FIELD'
     ).length;
     const mismatchCount = validationErrors.length - missingFieldCount;
-    const rawScore = 1 - missingFieldCount * 0.12 - mismatchCount * 0.08;
+    const extractionPenalty =
+      extractionMethod === 'heuristic'
+        ? 0.08
+        : extractionMethod === 'ocr_heuristic'
+        ? 0.12
+        : 0;
+
+    const rawScore = 1 - missingFieldCount * 0.12 - mismatchCount * 0.08 - extractionPenalty;
     const confidenceScore = Math.max(0, Math.min(1, Number(rawScore.toFixed(2))));
 
     return {
@@ -223,6 +238,7 @@ class ValidationService {
       confidenceScore,
       validationErrors,
       isValid: validationErrors.length === 0,
+      extractionMethod,
     };
   }
 }

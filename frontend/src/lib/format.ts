@@ -1,14 +1,22 @@
 import { AuthUser, DocumentStatus, ErrorType } from './types';
 
-export function formatCurrency(value: number, currency = 'USD'): string {
+export function formatCurrency(value: number | null | undefined, currency = 'USD'): string {
+  if (value === null || value === undefined || !Number.isFinite(value)) {
+    return '-';
+  }
+
   return new Intl.NumberFormat('en-US', {
     style: 'currency',
     currency,
     maximumFractionDigits: 2,
-  }).format(Number.isFinite(value) ? value : 0);
+  }).format(value);
 }
 
-export function formatDate(value: string): string {
+export function formatDate(value: string | null | undefined): string {
+  if (!value) {
+    return '-';
+  }
+
   const date = new Date(value);
 
   if (Number.isNaN(date.getTime())) {

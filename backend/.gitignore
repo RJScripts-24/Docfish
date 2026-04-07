@@ -14,6 +14,13 @@ coverage/
 uploads/*
 !uploads/.gitkeep
 
+# Local evaluation assets
+evaluation/dataset/*
+!evaluation/dataset/.gitkeep
+evaluation/reports/*
+!evaluation/reports/.gitkeep
+evaluation/ground-truth.json
+
 # Environment files and secrets
 .env
 .env.local

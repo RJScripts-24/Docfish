@@ -1,8 +1,9 @@
 import { motion } from 'motion/react';
-import { RefreshCw, Trash2, X } from 'lucide-react';
+import { RefreshCw, Trash2, X, Download } from 'lucide-react';
 
 interface BulkActionBarProps {
   selectedCount: number;
+  onExportSelected: () => void;
   onReprocessSelected: () => void;
   onDeleteSelected: () => void;
   onClearSelection: () => void;
@@ -10,6 +11,7 @@ interface BulkActionBarProps {
 
 export function BulkActionBar({
   selectedCount,
+  onExportSelected,
   onReprocessSelected,
   onDeleteSelected,
   onClearSelection,
@@ -39,6 +41,14 @@ export function BulkActionBar({
         <div className="hidden sm:block h-10 w-px bg-white/20" />
 
         <div className="flex items-center gap-3 w-full sm:w-auto">
+          <button
+            onClick={onExportSelected}
+            className="flex-1 sm:flex-auto px-6 py-2.5 bg-[var(--df-lime)] text-black border-2 border-black rounded-[6px] font-bold transition-all flex items-center justify-center gap-2 text-sm shadow-[3px_3px_0_black] active:translate-x-[3px] active:translate-y-[3px] active:shadow-none"
+          >
+            <Download className="w-4 h-4" />
+            Export JSON
+          </button>
+
           <button
             onClick={onReprocessSelected}
             className="flex-1 sm:flex-auto px-6 py-2.5 bg-white text-black border-2 border-black rounded-[6px] font-bold transition-all flex items-center justify-center gap-2 text-sm shadow-[3px_3px_0_black] active:translate-x-[3px] active:translate-y-[3px] active:shadow-none"

@@ -95,7 +95,7 @@ export function RecentDocuments({ documents, isLoading = false }: RecentDocument
                       <div className="text-sm font-medium text-gray-900">{doc.name}</div>
                     </Link>
                   </td>
-                  <td className="py-4 px-4 text-sm text-gray-600">{doc.vendor}</td>
+                  <td className="py-4 px-4 text-sm text-gray-600">{doc.vendor || '-'}</td>
                   <td className="py-4 px-4 text-sm text-gray-600">{formatDate(doc.invoiceDate)}</td>
                   <td className="py-4 px-4 text-sm font-medium text-gray-900">{formatCurrency(doc.amount)}</td>
                   <td className="py-4 px-4">{getStatusBadge(doc.status)}</td>

@@ -8,10 +8,12 @@ import { SearchFilterBar } from '../components/features/documents/SearchFilterBa
 import { BulkActionBar } from '../components/features/documents/BulkActionBar';
 import { EmptyState } from '../components/features/documents/EmptyState';
 import { Pagination } from '../components/features/documents/Pagination';
+import { confirmAction } from '../services/feedback';
 import {
   bulkDeleteDocuments,
   bulkReprocessDocuments,
   deleteDocument,
+  downloadDocumentJson,
   listDocuments,
   reprocessDocument,
 } from '../lib/api';
@@ -138,8 +140,42 @@ export default function DocumentsPage() {
     }, 'Failed to reprocess selected documents.');
   };
 
+  const handleExportSelected = async () => {
+    if (selectedIds.length === 0) {
+      return;
+    }
+
+    try {
+      setIsMutating(true);
+      setErrorMessage(null);
+
+      const exported = await Promise.all(
+        selectedIds.map(async (id) => {
+          const payload = await downloadDocumentJson(id);
+          return {
+            id,
+            exportedAt: new Date().toISOString(),
+            payload,
+          };
+        })
+      );
+
+      const blob = new Blob([JSON.stringify(exported, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const anchor = window.document.createElement('a');
+      anchor.href = url;
+      anchor.download = `documents-export-${new Date().toISOString().replace(/[:.]/g, '-')}.json`;
+      anchor.click();
+      URL.revokeObjectURL(url);
+    } catch (error) {
+      setErrorMessage(error instanceof Error ? error.message : 'Failed to export selected documents.');
+    } finally {
+      setIsMutating(false);
+    }
+  };
+
   const handleDeleteSelected = async () => {
-    if (!window.confirm(`Are you sure you want to delete ${selectedIds.length} invoices?`)) {
+    if (!confirmAction(`Are you sure you want to delete ${selectedIds.length} invoices?`)) {
       return;
     }
 
@@ -159,7 +195,7 @@ export default function DocumentsPage() {
   };
 
   const handleDelete = async (id: string) => {
-    if (!window.confirm('Are you sure you want to delete this invoice?')) {
+    if (!confirmAction('Are you sure you want to delete this invoice?')) {
       return;
     }
 
@@ -286,6 +322,7 @@ export default function DocumentsPage() {
 
       <BulkActionBar
         selectedCount={selectedIds.length}
+        onExportSelected={handleExportSelected}
         onReprocessSelected={handleReprocessSelected}
         onDeleteSelected={handleDeleteSelected}
         onClearSelection={() => setSelectedIds([])}

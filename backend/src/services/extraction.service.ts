@@ -2,11 +2,13 @@ import OpenAI from 'openai';
 import Document from '../models/Document.model';
 import promptService from './prompt.service';
 import validationService, {
+  ExtractionMethod,
   ExtractedInvoiceData,
   ValidationResult,
 } from './validation.service';
 import storageService from './storage.service';
 import { extractTextFromPdf } from '../utils/pdfParser';
+import { extractTextViaOcr } from '../utils/ocrParser';
 
 export interface ProcessDocumentInput {
   documentId: string;
@@ -14,6 +16,8 @@ export interface ProcessDocumentInput {
   originalFilename: string;
   mimeType?: string;
   userId?: string;
+  extractionMode?: 'fast' | 'accurate';
+  runValidation?: boolean;
 }
 
 export interface ExtractionOutput {
@@ -22,9 +26,62 @@ export interface ExtractionOutput {
   rawText: string;
   promptVersion: number;
   processingTimeMs: number;
+  extractionMethod: ExtractionMethod;
+}
+
+export interface PromptTestExecutionOutput {
+  promptId: string;
+  promptVersion: number;
+  extractionMethod: ExtractionMethod;
+  modelBacked: boolean;
+  degradedMode: boolean;
+  degradedModeReason: string | null;
+  rawModelOutput: string | null;
+  parsedOutput: unknown;
+  normalizedOutput: ExtractedInvoiceData;
+  validation: ValidationResult;
+  confidenceScore: number;
+  processingTimeMs: number;
 }
 
 class ExtractionService {
+  private buildUncheckedValidation(
+    extractedData: ExtractedInvoiceData,
+    extractionMethod: ExtractionMethod
+  ): ValidationResult {
+    const confidenceScore = extractionMethod === 'llm' ? 0.98 : extractionMethod === 'heuristic' ? 0.9 : 0.85;
+
+    return {
+      normalizedData: extractedData,
+      confidenceScore,
+      validationErrors: [],
+      isValid: true,
+      extractionMethod,
+    };
+  }
+
+  private buildResultPayload(input: {
+    extractedData: ExtractedInvoiceData;
+    validation: ValidationResult;
+    rawText: string;
+    promptVersion: number | null;
+    processingTimeMs: number;
+    extractionMethod: ExtractionMethod;
+    manuallyEdited?: boolean;
+    manualEdits?: unknown;
+  }) {
+    return {
+      extractedData: input.extractedData,
+      validation: input.validation,
+      rawText: input.rawText,
+      promptVersion: input.promptVersion,
+      processingTimeMs: input.processingTimeMs,
+      extractionMethod: input.extractionMethod,
+      manuallyEdited: Boolean(input.manuallyEdited),
+      manualEdits: Array.isArray(input.manualEdits) ? input.manualEdits : [],
+    };
+  }
+
   private toErrorDetails(error: unknown) {
     if (error instanceof Error) {
       return {
@@ -216,8 +273,26 @@ class ExtractionService {
   }
 
   private extractCurrencySymbol(text: string) {
+    const upperText = text.toUpperCase();
+
     if (text.includes('₹')) {
       return 'INR';
+    }
+
+    if (/\bRS\.?\b/i.test(text) || /\bINR\b/.test(upperText)) {
+      return 'INR';
+    }
+
+    if (/S\$/i.test(text) || /\bSGD\b/.test(upperText)) {
+      return 'SGD';
+    }
+
+    if (/A\$/i.test(text) || /\bAUD\b/.test(upperText)) {
+      return 'AUD';
+    }
+
+    if (/C\$/i.test(text) || /\bCAD\b/.test(upperText)) {
+      return 'CAD';
     }
 
     if (text.includes('$')) {
@@ -229,6 +304,18 @@ class ExtractionService {
     }
 
     if (text.includes('£')) {
+      return 'GBP';
+    }
+
+    if (/\bUSD\b/.test(upperText)) {
+      return 'USD';
+    }
+
+    if (/\bEUR\b/.test(upperText)) {
+      return 'EUR';
+    }
+
+    if (/\bGBP\b/.test(upperText)) {
       return 'GBP';
     }
 
@@ -263,7 +350,7 @@ class ExtractionService {
 
   private extractAmount(label: string, text: string) {
     const regex = new RegExp(
-      `${label}\\s*[:\\-]?\\s*(?:INR|USD|EUR|GBP|Rs\\.?|\\$|€|£)?\\s*([0-9,]+(?:\\.[0-9]{1,2})?)`,
+      `(?:${label})\\s*[:\\-]?\\s*(?:INR|USD|EUR|GBP|Rs\\.?|\\$|€|£)?\\s*([0-9,]+(?:\\.[0-9]{1,2})?)`,
       'i'
     );
     const match = text.match(regex);
@@ -285,13 +372,26 @@ class ExtractionService {
       invoice_number: this.extractInvoiceNumber(normalizedText),
       invoice_date: this.extractDate(normalizedText),
       currency: this.extractCurrencySymbol(normalizedText),
-      total_amount: this.extractAmount('total|grand total|amount due|net payable', normalizedText) as any,
-      tax_amount: this.extractAmount('tax|vat|gst|sales tax', normalizedText) as any,
+      total_amount: this.extractAmount(
+        'total amount|grand total|invoice total|total due|amount due|net payable|total',
+        normalizedText
+      ) as any,
+      tax_amount: this.extractAmount('tax amount|tax|vat|gst|sales tax', normalizedText) as any,
       line_items: lineItems,
     };
   }
 
-  private async runLlmExtraction(rawText: string) {
+  private async runLlmExtraction(rawText: string, userId?: string) {
+    const llmClient = this.getLlmClient();
+
+    if (!llmClient) {
+      return {
+        data: this.buildFallbackExtraction(rawText),
+        promptVersion: 0,
+        extractionMethod: 'heuristic' as const,
+      };
+    }
+
     let promptVersion = 0;
     let systemPrompt =
       'You extract invoice data into structured JSON with strong field fidelity.';
@@ -299,7 +399,7 @@ class ExtractionService {
       'Extract vendor_name, invoice_number, invoice_date, currency, total_amount, tax_amount, and line_items from the provided invoice text. Return JSON only.';
 
     try {
-      const prompt = await promptService.getActivePrompt('invoice_extraction');
+      const prompt = await promptService.getActivePrompt('invoice_extraction', userId);
       promptVersion = prompt.version;
       systemPrompt = prompt.systemPrompt;
       userPrompt = prompt.userPrompt;
@@ -307,15 +407,6 @@ class ExtractionService {
       console.warn('[Extraction] Failed to load active prompt, using default fallback prompt', {
         error: this.toErrorDetails(error),
       });
-    }
-
-    const llmClient = this.getLlmClient();
-
-    if (!llmClient) {
-      return {
-        data: this.buildFallbackExtraction(rawText),
-        promptVersion,
-      };
     }
 
     let completion;
@@ -343,6 +434,7 @@ class ExtractionService {
       return {
         data: this.buildFallbackExtraction(rawText),
         promptVersion,
+        extractionMethod: 'heuristic' as const,
       };
     }
 
@@ -353,33 +445,101 @@ class ExtractionService {
     }
 
     let parsed: Partial<ExtractedInvoiceData>;
+    let extractionMethod: 'llm' | 'heuristic' = 'llm';
 
     try {
       parsed = this.safeJsonParse(outputText);
     } catch (_error) {
       // If the model responds with non-JSON text, fall back to deterministic extraction.
       parsed = this.buildFallbackExtraction(rawText);
+      extractionMethod = 'heuristic';
     }
 
     return {
       data: parsed,
       promptVersion,
+      extractionMethod,
     };
   }
 
-  async extractFromPdf(filePath: string): Promise<ExtractionOutput> {
+  async extractFromPdf(
+    filePath: string,
+    options: {
+      extractionMode?: 'fast' | 'accurate';
+      runValidation?: boolean;
+      userId?: string;
+    } = {}
+  ): Promise<ExtractionOutput> {
     const startedAt = Date.now();
-    const rawText = await extractTextFromPdf(filePath);
-    const llmResult = await this.runLlmExtraction(rawText);
-    const validation = validationService.validate(llmResult.data);
+    const extractionMode = options.extractionMode || 'accurate';
+    const runValidation = options.runValidation !== false;
+    let rawText = await extractTextFromPdf(filePath);
+    let usedOcrFallback = false;
+
+    const ocrThreshold = Number(process.env.OCR_MIN_TEXT_LENGTH || 40);
+    const ocrMaxPages = Number(process.env.OCR_MAX_PAGES || 3);
+
+    if (extractionMode === 'accurate' && (rawText || '').trim().length < ocrThreshold) {
+      console.info('[Extraction] Parsed text is below threshold, attempting OCR fallback', {
+        filePath,
+        extractedTextLength: (rawText || '').trim().length,
+        ocrThreshold,
+        ocrMaxPages,
+      });
+
+      const ocrText = await extractTextViaOcr(filePath, ocrMaxPages);
+
+      if (ocrText && ocrText.trim().length > (rawText || '').trim().length) {
+        rawText = ocrText;
+        usedOcrFallback = true;
+
+        console.info('[Extraction] OCR fallback improved extracted text', {
+          filePath,
+          ocrTextLength: ocrText.trim().length,
+        });
+      } else {
+        console.info('[Extraction] OCR fallback unavailable or did not improve extracted text', {
+          filePath,
+        });
+      }
+    }
+
+    if (extractionMode !== 'accurate' && (rawText || '').trim().length < ocrThreshold) {
+      console.info('[Extraction] OCR fallback skipped because extraction mode is fast', {
+        filePath,
+        extractionMode,
+      });
+    }
+
+    const llmResult =
+      extractionMode === 'fast'
+        ? {
+            data: this.buildFallbackExtraction(rawText),
+            promptVersion: 0,
+            extractionMethod: 'heuristic' as const,
+          }
+        : await this.runLlmExtraction(rawText, options.userId);
+
+    const extractionMethod: ExtractionMethod =
+      usedOcrFallback && llmResult.extractionMethod !== 'llm'
+        ? 'ocr_heuristic'
+        : llmResult.extractionMethod;
+
+    const normalized = validationService.normalizeExtractedData(llmResult.data);
+    const validation = runValidation
+      ? validationService.validate(llmResult.data, {
+          extractionMethod,
+        })
+      : this.buildUncheckedValidation(normalized, extractionMethod);
     const processingTimeMs = Date.now() - startedAt;
 
     return {
-      extractedData: validation.normalizedData,
+      extractedData: normalized,
       validation,
       rawText,
       promptVersion: llmResult.promptVersion,
       processingTimeMs,
+      extractionMethod,
     };
   }
 
@@ -403,7 +563,11 @@ class ExtractionService {
     });
 
     try {
-      const result = await this.extractFromPdf(input.filePath);
+      const result = await this.extractFromPdf(input.filePath, {
+        extractionMode: input.extractionMode || 'accurate',
+        runValidation: input.runValidation,
+        userId: input.userId,
+      });
 
       document.status = 'PROCESSED';
       document.extractedData = result.extractedData;
@@ -412,16 +576,25 @@ class ExtractionService {
       document.processingTimeMs = result.processingTimeMs;
       document.rawText = result.rawText;
       document.promptVersion = result.promptVersion;
+      document.extractionMethod = result.extractionMethod;
+      document.manuallyEdited = false;
+      document.processingOptions = {
+        autoProcess: true,
+        extractionMode: input.extractionMode || 'accurate',
+        runValidation: input.runValidation !== false,
+      };
       document.processedAt = new Date();
-
-      await document.save();
-      await storageService.saveJsonResult(document._id.toString(), {
+      document.resultPayload = this.buildResultPayload({
         extractedData: result.extractedData,
         validation: result.validation,
         rawText: result.rawText,
         promptVersion: result.promptVersion,
         processingTimeMs: result.processingTimeMs,
-      });
+        extractionMethod: result.extractionMethod,
+      }) as any;
+
+      await document.save();
+      await storageService.saveJsonResult(document._id.toString(), document.resultPayload);
 
       console.info('[Extraction] Completed processing document', {
         documentId: input.documentId,
@@ -433,7 +606,8 @@ class ExtractionService {
       return document;
     } catch (error: any) {
       if (this.isRecoverablePdfError(error)) {
-        const validation = validationService.validate({
+        const validation = validationService.validate(
+          {
           vendor_name: null,
           invoice_number: null,
           invoice_date: null,
@@ -441,7 +615,9 @@ class ExtractionService {
           total_amount: null,
           tax_amount: null,
           line_items: [],
-        });
+          },
+          { extractionMethod: 'ocr_heuristic' }
+        );
 
         validation.validationErrors.unshift({
           field: 'document',
@@ -461,16 +637,25 @@ class ExtractionService {
         document.processingTimeMs = processingTimeMs;
         document.rawText = '';
         document.errorMessage = null;
+        document.extractionMethod = 'ocr_heuristic';
+        document.manuallyEdited = false;
+        document.processingOptions = {
+          autoProcess: true,
+          extractionMode: input.extractionMode || 'accurate',
+          runValidation: input.runValidation !== false,
+        };
         document.processedAt = new Date();
-
-        await document.save();
-        await storageService.saveJsonResult(document._id.toString(), {
+        document.resultPayload = this.buildResultPayload({
           extractedData: validation.normalizedData,
           validation,
           rawText: '',
           promptVersion: null,
           processingTimeMs: processingTimeMs || 0,
-        });
+          extractionMethod: 'ocr_heuristic',
+        }) as any;
+
+        await document.save();
+        await storageService.saveJsonResult(document._id.toString(), document.resultPayload);
 
         console.warn('[Extraction] Recovered from PDF parse error and moved document to review', {
           documentId: input.documentId,
@@ -515,7 +700,98 @@ class ExtractionService {
       originalFilename: document.originalFilename,
       mimeType: document.mimeType,
       userId: document.uploadedBy?.toString(),
+      extractionMode: document.processingOptions?.extractionMode || 'accurate',
+      runValidation: document.processingOptions?.runValidation !== false,
     });
+  }
+
+  async testPromptVersion(promptId: string, sampleText: string, userId?: string): Promise<PromptTestExecutionOutput> {
+    const startedAt = Date.now();
+    const prompt = await promptService.getPromptById(promptId, userId);
+    const llmClient = this.getLlmClient();
+
+    let extractionMethod: ExtractionMethod = 'heuristic';
+    let modelBacked = false;
+    let degradedMode = false;
+    let degradedModeReason: string | null = null;
+    let rawModelOutput: string | null = null;
+    let parsedOutput: unknown = null;
+    let extractedCandidate: Partial<ExtractedInvoiceData> = {};
+
+    if (!llmClient) {
+      degradedMode = true;
+      degradedModeReason = 'MODEL_UNAVAILABLE';
+      extractedCandidate = this.buildFallbackExtraction(sampleText);
+      parsedOutput = extractedCandidate;
+    } else {
+      try {
+        const completion = await llmClient.chat.completions.create({
+          model: process.env.GROQ_MODEL || 'llama-3.3-70b-versatile',
+          temperature: 0,
+          messages: [
+            {
+              role: 'system',
+              content: `${prompt.systemPrompt}\n\nReturn strict JSON only. Do not wrap output in markdown code fences.`,
+            },
+            {
+              role: 'user',
+              content: `${prompt.userPrompt}\n\nInvoice text:\n${sampleText}`,
+            },
+          ],
+        });
+
+        rawModelOutput = completion.choices?.[0]?.message?.content || null;
+
+        if (!rawModelOutput || !rawModelOutput.trim()) {
+          throw new Error('Model returned empty content');
+        }
+
+        try {
+          extractedCandidate = this.safeJsonParse(rawModelOutput);
+          parsedOutput = extractedCandidate;
+          extractionMethod = 'llm';
+          modelBacked = true;
+        } catch (_parseError) {
+          degradedMode = true;
+          degradedModeReason = 'MODEL_OUTPUT_PARSE_FAILED';
+          extractionMethod = 'heuristic';
+          extractedCandidate = this.buildFallbackExtraction(sampleText);
+          parsedOutput = rawModelOutput;
+        }
+      } catch (error) {
+        degradedMode = true;
+        degradedModeReason = 'MODEL_REQUEST_FAILED';
+        extractionMethod = 'heuristic';
+        extractedCandidate = this.buildFallbackExtraction(sampleText);
+        parsedOutput = extractedCandidate;
+
+        console.warn('[Prompt Test] Model-backed prompt test failed; returning heuristic fallback', {
+          promptId,
+          error: this.toErrorDetails(error),
+        });
+      }
+    }
+
+    const normalizedOutput = validationService.normalizeExtractedData(extractedCandidate);
+    const validation = validationService.validate(extractedCandidate, {
+      extractionMethod,
+    });
+    const processingTimeMs = Date.now() - startedAt;
+
+    return {
+      promptId: String(prompt._id),
+      promptVersion: Number(prompt.version || 0),
+      extractionMethod,
+      modelBacked,
+      degradedMode,
+      degradedModeReason,
+      rawModelOutput,
+      parsedOutput: parsedOutput || extractedCandidate,
+      normalizedOutput,
+      validation,
+      confidenceScore: validation.confidenceScore,
+      processingTimeMs,
+    };
   }
 }
 

@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { createId } from '../utils/createId';
-import { getUploadStatus, uploadDocuments } from '../lib/api';
+import { getUploadStatus, UploadRequestOptions, uploadDocuments } from '../lib/api';
 
 export interface UploadedFile {
   id: string;
@@ -17,7 +17,7 @@ export function useUploadQueue() {
   const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
 
   const addFiles = useCallback(
-    async (files: File[]) => {
+    async (files: File[], options: UploadRequestOptions = {}) => {
       const newFiles: UploadedFile[] = files.map((file) => ({
         id: createId(),
         file,
@@ -29,7 +29,7 @@ export function useUploadQueue() {
       setUploadedFiles((prev) => [...prev, ...newFiles]);
 
       try {
-        const response = await uploadDocuments(files, true);
+        const response = await uploadDocuments(files, options);
 
         setUploadedFiles((prev) =>
           prev.map((currentFile, index) => {

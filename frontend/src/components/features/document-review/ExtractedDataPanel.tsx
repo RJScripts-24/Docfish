@@ -6,14 +6,9 @@ const FIELD_LABELS: Record<string, string> = {
   vendorName: 'Vendor Name',
   invoiceNumber: 'Invoice Number',
   invoiceDate: 'Invoice Date',
-  dueDate: 'Due Date',
   currency: 'Currency',
   totalAmount: 'Total Amount',
   taxAmount: 'Tax Amount',
-  taxRate: 'Tax Rate',
-  subtotal: 'Subtotal',
-  paymentTerms: 'Payment Terms',
-  notes: 'Notes',
 };
 
 interface ExtractedDataPanelProps {
@@ -55,8 +50,6 @@ export function ExtractedDataPanel({
   });
 
   const lineItemsTotal = lineItems.reduce((sum, item) => sum + Number(item.total || 0), 0);
-  const totalAmount = Number(fields.totalAmount?.value || 0);
-  const hasMismatch = Math.abs(lineItemsTotal - totalAmount) > 0.01;
 
   return (
     <div className="h-full overflow-y-auto bg-gray-50 p-6 space-y-6">
@@ -72,7 +65,7 @@ export function ExtractedDataPanel({
           </div>
           <div>
             <p className="text-sm text-gray-600">Processing Time</p>
-            <p className="text-lg font-semibold text-gray-900 mt-1">{document.processingTime}</p>
+            <p className="text-lg font-semibold text-gray-900 mt-1">{document.processingTime || '-'}</p>
           </div>
           <div>
             <p className="text-sm text-gray-600">Overall Confidence</p>
@@ -167,7 +160,7 @@ export function ExtractedDataPanel({
                   <td className="px-4 py-3">
                     <input
                       type="number"
-                      value={item.quantity}
+                          value={item.quantity ?? ''}
                       onChange={(event) => onLineItemChange(item.id, 'quantity', event.target.value)}
                       className="w-full px-3 py-1.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 text-sm"
                     />
@@ -176,13 +169,15 @@ export function ExtractedDataPanel({
                     <input
                       type="number"
                       step="0.01"
-                      value={item.unitPrice}
+                          value={item.unitPrice ?? ''}
                       onChange={(event) => onLineItemChange(item.id, 'unitPrice', event.target.value)}
                       className="w-full px-3 py-1.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 text-sm"
                     />
                   </td>
                   <td className="px-4 py-3">
-                    <span className="font-semibold text-gray-900">${Number(item.total || 0).toFixed(2)}</span>
+                    <span className="font-semibold text-gray-900">
+                      {item.total !== null ? `$${Number(item.total).toFixed(2)}` : '-'}
+                    </span>
                   </td>
                   <td className="px-4 py-3">
                     <button
@@ -215,21 +210,11 @@ export function ExtractedDataPanel({
       >
         <h3 className="text-lg font-bold text-gray-900 mb-4">Validation Results</h3>
         <div className="space-y-3">
-          <div className={`flex items-start gap-3 p-3 rounded-xl ${hasMismatch ? 'bg-red-50' : 'bg-green-50'}`}>
-            <div className={`w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 ${hasMismatch ? 'bg-red-500' : 'bg-green-500'}`}>
-              {hasMismatch ? <AlertCircle className="w-4 h-4 text-white" /> : <Check className="w-4 h-4 text-white" />}
+          {document.validationResults.length === 0 ? (
+            <div className="rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-600">
+              No validation errors returned by backend.
             </div>
-            <div className="flex-1">
-              <p className={`font-semibold ${hasMismatch ? 'text-red-900' : 'text-green-900'}`}>
-                {hasMismatch ? 'Total Amount Mismatch' : 'Total Amount Verified'}
-              </p>
-              <p className={`text-sm ${hasMismatch ? 'text-red-700' : 'text-green-700'}`}>
-                {hasMismatch
-                  ? `Line items total ($${lineItemsTotal.toFixed(2)}) does not match invoice total ($${totalAmount.toFixed(2)})`
-                  : 'Sum of line items matches total amount'}
-              </p>
-            </div>
-          </div>
+          ) : null}
 
           {document.validationResults.map((result, index) => {
             const colorClass =

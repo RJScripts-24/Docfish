@@ -4,6 +4,7 @@ import { DashboardHeader } from '../components/layout/DashboardHeader';
 import { VersionHistory } from '../components/features/settings/VersionHistory';
 import { PromptEditor } from '../components/features/settings/PromptEditor';
 import { TestPromptPanel } from '../components/features/settings/TestPromptPanel';
+import { PromptDiffPanel } from '../components/features/settings/PromptDiffPanel';
 import { Plus, Beaker } from 'lucide-react';
 import {
   activatePrompt,
@@ -263,6 +264,12 @@ export default function SettingsPage() {
           {infoMessage ? (
             <div className="mt-4 rounded-2xl border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-700">
               {infoMessage}
+            </div>
+          ) : null}
+
+          {!isLoading && versions.length > 1 ? (
+            <div className="mt-4">
+              <PromptDiffPanel versions={versions} initialLeftId={selectedVersionId} />
             </div>
           ) : null}
         </div>
