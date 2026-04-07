@@ -1,9 +1,9 @@
 import { Request, Response, NextFunction } from 'express';
-import jwt from 'jsonwebtoken';
 import User from '../models/User.model';
+import authService from '../services/auth.service';
 
 export interface AuthRequest extends Request {
-  user?: any;
+  user?: Express.UserPayload;
 }
 
 export const protect = async (req: AuthRequest, res: Response, next: NextFunction): Promise<void> => {
@@ -12,9 +12,19 @@ export const protect = async (req: AuthRequest, res: Response, next: NextFunctio
   if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
     try {
       token = req.headers.authorization.split(' ')[1];
-      const decoded = jwt.verify(token, process.env.JWT_SECRET as string) as { id: string };
+      const decoded = await authService.verifyToken(token);
       
-      req.user = await User.findById(decoded.id).select('-password');
+      const user = await User.findById(decoded.userId).select('_id email');
+
+      if (!user) {
+        res.status(401).json({ error: 'Not authorized, user not found' });
+        return;
+      }
+
+      req.user = {
+        userId: user._id.toString(),
+        email: user.email,
+      };
       
       return next();
     } catch (error) {

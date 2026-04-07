@@ -1,4 +1,4 @@
-import { Types } from 'mongoose';
+import 'multer';
 
 declare global {
   namespace Express {

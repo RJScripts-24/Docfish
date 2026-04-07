@@ -1,5 +1,5 @@
 import bcrypt from 'bcryptjs';
-import jwt from 'jsonwebtoken';
+import jwt, { SignOptions } from 'jsonwebtoken';
 import User from '../models/User.model';
 
 export interface RegisterUserInput {
@@ -42,8 +42,8 @@ class AuthService {
     return secret;
   }
 
-  private getJwtExpiresIn(): string {
-    return process.env.JWT_EXPIRES_IN || '7d';
+  private getJwtExpiresIn(): SignOptions['expiresIn'] {
+    return (process.env.JWT_EXPIRES_IN as SignOptions['expiresIn']) || '7d';
   }
 
   private generateToken(payload: AuthTokenPayload): string {

@@ -17,6 +17,23 @@ export interface ExtractedInvoiceData {
   line_items: LineItem[];
 }
 
+export interface RawLineItem {
+  description?: string;
+  quantity?: number | string | null;
+  unit_price?: number | string | null;
+  line_total?: number | string | null;
+}
+
+export interface RawExtractedInvoiceData {
+  vendor_name: string | null;
+  invoice_number: string | null;
+  invoice_date: string | null;
+  currency: string | null;
+  total_amount: number | string | null;
+  tax_amount: number | string | null;
+  line_items: RawLineItem[];
+}
+
 export interface ValidationErrorItem {
   field: string;
   message: string;
@@ -37,6 +54,8 @@ class ValidationService {
     'invoice_date',
     'currency',
     'total_amount',
+    'tax_amount',
+    'line_items',
   ];
 
   private roundToTwo(value: number) {
@@ -47,7 +66,7 @@ class ValidationService {
     return Math.abs(a - b) <= tolerance;
   }
 
-  private normalizeLineItems(items: any[] = []): LineItem[] {
+  private normalizeLineItems(items: RawLineItem[] = []): LineItem[] {
     if (!Array.isArray(items)) {
       return [];
     }
@@ -69,25 +88,25 @@ class ValidationService {
     }));
   }
 
-  normalizeExtractedData(data: Partial<ExtractedInvoiceData>): ExtractedInvoiceData {
+  normalizeExtractedData(data: Partial<RawExtractedInvoiceData>): ExtractedInvoiceData {
     return {
       vendor_name: data.vendor_name ? String(data.vendor_name).trim() : null,
       invoice_number: data.invoice_number ? String(data.invoice_number).trim() : null,
       invoice_date: data.invoice_date ? normalizeDate(String(data.invoice_date)) : null,
       currency: data.currency ? normalizeCurrency(String(data.currency)) : null,
       total_amount:
-        data.total_amount === undefined || data.total_amount === null || data.total_amount === ''
+        data.total_amount === undefined || data.total_amount === null
           ? null
           : this.roundToTwo(normalizeNumber(data.total_amount)),
       tax_amount:
-        data.tax_amount === undefined || data.tax_amount === null || data.tax_amount === ''
+        data.tax_amount === undefined || data.tax_amount === null
           ? null
           : this.roundToTwo(normalizeNumber(data.tax_amount)),
-      line_items: this.normalizeLineItems(data.line_items as any[]),
+      line_items: this.normalizeLineItems(data.line_items as RawLineItem[]),
     };
   }
 
-  validate(data: Partial<ExtractedInvoiceData>): ValidationResult {
+  validate(data: Partial<RawExtractedInvoiceData>): ValidationResult {
     const normalizedData = this.normalizeExtractedData(data);
     const validationErrors: ValidationErrorItem[] = [];
 

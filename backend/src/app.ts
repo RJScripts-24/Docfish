@@ -3,12 +3,14 @@ import cors from 'cors';
 import helmet from 'helmet';
 import morgan from 'morgan';
 import path from 'path';
-import { connectDB } from './config/db';
+import connectDB from './config/db';
 import authRoutes from './routes/auth.routes';
 import documentRoutes from './routes/document.routes';
 import metricsRoutes from './routes/metrics.routes';
 import promptRoutes from './routes/prompt.routes';
 import errorHandler from './middlewares/errorHandler.middleware';
+import { protect } from './middlewares/auth.middleware';
+import { reprocessInvoice } from './controllers/document.controller';
 
 const app = express();
 
@@ -38,8 +40,15 @@ app.get('/health', (_req, res) => {
 
 app.use('/api/auth', authRoutes);
 app.use('/api/documents', documentRoutes);
+app.post('/api/reprocess/:id', protect, reprocessInvoice);
 app.use('/api/metrics', metricsRoutes);
 app.use('/api/prompts', promptRoutes);
+
+// Compatibility aliases without /api prefix for assignment contract.
+app.use('/documents', documentRoutes);
+app.post('/reprocess/:id', protect, reprocessInvoice);
+app.use('/metrics', metricsRoutes);
+app.use('/prompts', promptRoutes);
 
 app.use((_req, res) => {
   res.status(404).json({

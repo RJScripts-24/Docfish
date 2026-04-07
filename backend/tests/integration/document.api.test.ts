@@ -1,29 +1,27 @@
 import express from 'express';
 import request from 'supertest';
 
-jest.mock('../../src/middlewares/auth.middleware', () => ({
-  __esModule: true,
-  default: (req: any, _res: any, next: any) => {
-    req.user = { userId: 'user-1', email: 'test@example.com' };
-    next();
-  },
-}));
-
-const saveUploadedFile = jest.fn();
+const createDocument = jest.fn();
+const findDocuments = jest.fn();
+const findDocumentById = jest.fn();
 const processDocument = jest.fn();
 const reprocessDocument = jest.fn();
-const listDocuments = jest.fn();
-const getDocumentById = jest.fn();
-const updateManualCorrections = jest.fn();
+let mockedFiles: any[] = [];
+
 const uploadMiddleware = {
-  array: jest.fn(() => (_req: any, _res: any, next: any) => next()),
-  single: jest.fn(() => (_req: any, _res: any, next: any) => next()),
+  fields: jest.fn(() => (req: any, _res: any, next: any) => {
+    req.files = {
+      files: mockedFiles,
+    };
+    next();
+  }),
 };
 
-jest.mock('../../src/services/storage.service', () => ({
+jest.mock('../../src/middlewares/auth.middleware', () => ({
   __esModule: true,
-  default: {
-    saveUploadedFile: (...args: any[]) => saveUploadedFile(...args),
+  protect: (req: any, _res: any, next: any) => {
+    req.user = { userId: 'user-1', email: 'test@example.com' };
+    next();
   },
 }));
 
@@ -35,18 +33,18 @@ jest.mock('../../src/services/extraction.service', () => ({
   },
 }));
 
-jest.mock('../../src/services/document.service', () => ({
+jest.mock('../../src/models/Document.model', () => ({
   __esModule: true,
   default: {
-    listDocuments: (...args: any[]) => listDocuments(...args),
-    getDocumentById: (...args: any[]) => getDocumentById(...args),
-    updateManualCorrections: (...args: any[]) => updateManualCorrections(...args),
+    create: (...args: any[]) => createDocument(...args),
+    find: (...args: any[]) => findDocuments(...args),
+    findById: (...args: any[]) => findDocumentById(...args),
   },
 }));
 
 jest.mock('../../src/middlewares/upload.middleware', () => ({
   __esModule: true,
-  default: uploadMiddleware,
+  upload: uploadMiddleware,
 }));
 
 describe('document routes', () => {
@@ -61,31 +59,29 @@ describe('document routes', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
+    mockedFiles = [];
   });
 
   it('lists processed invoices', async () => {
-    listDocuments.mockResolvedValue({
-      items: [
-        {
-          id: 'doc-1',
-          originalFilename: 'invoice-1.pdf',
-          status: 'PROCESSED',
-        },
-      ],
-      total: 1,
+    const items = [{ id: 'doc-1', originalFilename: 'invoice-1.pdf', status: 'PROCESSED' }];
+    findDocuments.mockReturnValue({
+      select: jest.fn().mockReturnValue({
+        sort: jest.fn().mockResolvedValue(items),
+      }),
     });
 
     const response = await request(app).get('/api/documents');
 
     expect(response.status).toBe(200);
-    expect(response.body.items).toHaveLength(1);
-    expect(listDocuments).toHaveBeenCalled();
+    expect(response.body).toHaveLength(1);
+    expect(findDocuments).toHaveBeenCalledWith({ uploadedBy: 'user-1' });
   });
 
   it('gets extracted data by document id', async () => {
-    getDocumentById.mockResolvedValue({
+    const document = {
       id: 'doc-1',
       originalFilename: 'invoice-1.pdf',
+      uploadedBy: { toString: () => 'user-1' },
       extractedData: {
         vendor_name: 'Acme Corp',
         invoice_number: 'INV-1001',
@@ -95,13 +91,17 @@ describe('document routes', () => {
         tax_amount: 10,
         line_items: [],
       },
+    };
+
+    findDocumentById.mockReturnValue({
+      select: jest.fn().mockResolvedValue(document),
     });
 
     const response = await request(app).get('/api/documents/doc-1');
 
     expect(response.status).toBe(200);
     expect(response.body.id).toBe('doc-1');
-    expect(getDocumentById).toHaveBeenCalledWith('doc-1', 'user-1');
+    expect(findDocumentById).toHaveBeenCalledWith('doc-1');
   });
 
   it('reprocesses a document', async () => {
@@ -118,12 +118,21 @@ describe('document routes', () => {
   });
 
   it('updates manual corrections', async () => {
-    updateManualCorrections.mockResolvedValue({
+    const existing = {
       id: 'doc-1',
+      uploadedBy: { toString: () => 'user-1' },
       extractedData: {
-        vendor_name: 'Updated Vendor',
+        vendor_name: 'Initial Vendor',
       },
-    });
+      save: jest.fn().mockResolvedValue({
+        id: 'doc-1',
+        extractedData: {
+          vendor_name: 'Updated Vendor',
+        },
+      }),
+    };
+
+    findDocumentById.mockResolvedValue(existing);
 
     const response = await request(app)
       .patch('/api/documents/doc-1')
@@ -134,11 +143,7 @@ describe('document routes', () => {
       });
 
     expect(response.status).toBe(200);
-    expect(updateManualCorrections).toHaveBeenCalledWith(
-      'doc-1',
-      { extractedData: { vendor_name: 'Updated Vendor' } },
-      'user-1'
-    );
+    expect(existing.save).toHaveBeenCalled();
   });
 
   it('uploads invoices and triggers processing', async () => {
@@ -155,25 +160,20 @@ describe('document routes', () => {
       },
     ];
 
-    uploadMiddleware.array.mockReturnValue((req: any, _res: any, next: any) => {
-      req.files = fakeFiles;
-      next();
-    });
+    mockedFiles = fakeFiles;
 
-    saveUploadedFile
+    createDocument
       .mockResolvedValueOnce({
-        originalName: 'invoice-1.pdf',
-        filename: 'stored-1.pdf',
+        _id: 'doc-1',
+        filePath: '/tmp/stored-1.pdf',
+        originalFilename: 'invoice-1.pdf',
         mimeType: 'application/pdf',
-        size: 10,
-        path: '/tmp/stored-1.pdf',
       })
       .mockResolvedValueOnce({
-        originalName: 'invoice-2.pdf',
-        filename: 'stored-2.pdf',
+        _id: 'doc-2',
+        filePath: '/tmp/stored-2.pdf',
+        originalFilename: 'invoice-2.pdf',
         mimeType: 'application/pdf',
-        size: 10,
-        path: '/tmp/stored-2.pdf',
       });
 
     processDocument
@@ -183,7 +183,8 @@ describe('document routes', () => {
     const response = await request(app).post('/api/documents');
 
     expect(response.status).toBe(201);
-    expect(saveUploadedFile).toHaveBeenCalledTimes(2);
+    expect(createDocument).toHaveBeenCalledTimes(2);
     expect(processDocument).toHaveBeenCalledTimes(2);
   });
+
 });

@@ -88,6 +88,8 @@ describe('validationService', () => {
           expect.objectContaining({ field: 'invoice_date', code: 'MISSING_FIELD' }),
           expect.objectContaining({ field: 'currency', code: 'MISSING_FIELD' }),
           expect.objectContaining({ field: 'total_amount', code: 'MISSING_FIELD' }),
+          expect.objectContaining({ field: 'tax_amount', code: 'MISSING_FIELD' }),
+          expect.objectContaining({ field: 'line_items', code: 'MISSING_FIELD' }),
         ])
       );
       expect(result.confidenceScore).toBeLessThan(1);

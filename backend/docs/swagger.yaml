@@ -1,0 +1,124 @@
+openapi: 3.0.3
+info:
+	title: Docfish Backend API
+	version: 1.0.0
+servers:
+	- url: http://localhost:5000
+paths:
+	/health:
+		get:
+			summary: Health check
+			responses:
+				'200':
+					description: Service is healthy
+	/api/auth/register:
+		post:
+			summary: Register a user
+			responses:
+				'201':
+					description: User created
+	/api/auth/login:
+		post:
+			summary: Login a user
+			responses:
+				'200':
+					description: Authentication successful
+	/api/documents:
+		get:
+			summary: List invoices
+			responses:
+				'200':
+					description: List of documents
+		post:
+			summary: Upload invoice files (single or bulk)
+			responses:
+				'201':
+					description: Documents uploaded and processing started
+	/api/documents/{id}:
+		get:
+			summary: Get invoice by id
+			parameters:
+				- in: path
+					name: id
+					required: true
+					schema:
+						type: string
+			responses:
+				'200':
+					description: Document details
+		patch:
+			summary: Apply manual extraction corrections
+			parameters:
+				- in: path
+					name: id
+					required: true
+					schema:
+						type: string
+			responses:
+				'200':
+					description: Document updated
+	/api/documents/reprocess/{id}:
+		post:
+			summary: Reprocess invoice by id
+			parameters:
+				- in: path
+					name: id
+					required: true
+					schema:
+						type: string
+			responses:
+				'200':
+					description: Document reprocessed
+	/api/reprocess/{id}:
+		post:
+			summary: Reprocess invoice by id (compatibility endpoint)
+			parameters:
+				- in: path
+					name: id
+					required: true
+					schema:
+						type: string
+			responses:
+				'200':
+					description: Document reprocessed
+	/api/metrics:
+		get:
+			summary: Get processing metrics
+			responses:
+				'200':
+					description: Metrics payload
+	/api/metrics/errors:
+		get:
+			summary: Get validation/processing error report for dashboard
+			responses:
+				'200':
+					description: Error report payload
+	/api/prompts:
+		get:
+			summary: List prompts
+			responses:
+				'200':
+					description: Prompt versions
+		post:
+			summary: Create prompt version
+			responses:
+				'201':
+					description: Prompt created
+	/api/prompts/active:
+		get:
+			summary: Get active extraction prompt
+			responses:
+				'200':
+					description: Active prompt
+	/api/prompts/{id}/activate:
+		post:
+			summary: Activate prompt by id
+			parameters:
+				- in: path
+					name: id
+					required: true
+					schema:
+						type: string
+			responses:
+				'200':
+					description: Prompt activated

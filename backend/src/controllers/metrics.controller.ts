@@ -1,13 +1,18 @@
 import { Request, Response } from 'express';
 import Document from '../models/Document.model';
 
+const buildScope = (req: Request) => (req.user?.userId ? { uploadedBy: req.user.userId } : {});
+
 export const getMetrics = async (req: Request, res: Response): Promise<void> => {
   try {
-    const totalDocuments = await Document.countDocuments();
+    const scope = buildScope(req);
+    const totalDocuments = await Document.countDocuments(scope);
     
-    const successfulDocuments = await Document.countDocuments({ status: 'SUCCESS' });
-    const failedDocuments = await Document.countDocuments({ status: 'FAILED' });
-    const pendingDocuments = await Document.countDocuments({ status: 'PENDING' });
+    const successfulDocuments = await Document.countDocuments({ ...scope, status: 'PROCESSED' });
+    const failedDocuments = await Document.countDocuments({ ...scope, status: 'FAILED' });
+    const uploadedDocuments = await Document.countDocuments({ ...scope, status: 'UPLOADED' });
+    const processingDocuments = await Document.countDocuments({ ...scope, status: 'PROCESSING' });
+    const pendingDocuments = uploadedDocuments + processingDocuments;
 
     const completedDocuments = successfulDocuments + failedDocuments;
     
@@ -16,9 +21,14 @@ export const getMetrics = async (req: Request, res: Response): Promise<void> => 
       : 0;
 
     const processingStats = await Document.aggregate([
+      {
+        $match: {
+          ...scope,
+        },
+      },
       { 
         $match: { 
-          status: 'SUCCESS', 
+          status: 'PROCESSED', 
           processingTimeMs: { $exists: true, $type: 'number' } 
         } 
       },
@@ -39,10 +49,46 @@ export const getMetrics = async (req: Request, res: Response): Promise<void> => 
         totalDocuments,
         successfulDocuments,
         failedDocuments,
+        uploadedDocuments,
+        processingDocuments,
         pendingDocuments,
         successRate,
         averageProcessingTimeMs
       }
+    });
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+export const getErrorReport = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const scope = buildScope(req);
+
+    const [validationErrorsByCode, recentFailedDocuments] = await Promise.all([
+      Document.aggregate([
+        { $match: scope },
+        { $unwind: '$validationErrors' },
+        {
+          $group: {
+            _id: '$validationErrors.code',
+            count: { $sum: 1 },
+          },
+        },
+        { $sort: { count: -1 } },
+      ]),
+      Document.find({ ...scope, status: 'FAILED' })
+        .select('originalFilename errorMessage updatedAt')
+        .sort({ updatedAt: -1 })
+        .limit(20)
+        .lean(),
+    ]);
+
+    res.status(200).json({
+      errorReport: {
+        validationErrorsByCode,
+        recentFailedDocuments,
+      },
     });
   } catch (error: any) {
     res.status(500).json({ error: error.message });

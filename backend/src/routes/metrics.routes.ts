@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { getMetrics } from '../controllers/metrics.controller';
+import { getErrorReport, getMetrics } from '../controllers/metrics.controller';
 import { protect } from '../middlewares/auth.middleware';
 
 const router = Router();
@@ -7,5 +7,6 @@ const router = Router();
 router.use(protect);
 
 router.get('/', getMetrics);
+router.get('/errors', getErrorReport);
 
 export default router;

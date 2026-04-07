@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 
-export const errorHandler = (err: any, req: Request, res: Response, next: NextFunction): void => {
+const errorHandler = (err: any, req: Request, res: Response, next: NextFunction): void => {
   let statusCode = res.statusCode === 200 ? 500 : res.statusCode;
   let message = err.message || 'Internal Server Error';
 
@@ -24,3 +24,6 @@ export const errorHandler = (err: any, req: Request, res: Response, next: NextFu
     stack: process.env.NODE_ENV === 'production' ? undefined : err.stack,
   });
 };
+
+export { errorHandler };
+export default errorHandler;

@@ -25,14 +25,17 @@ export interface ExtractionOutput {
 }
 
 class ExtractionService {
-  private getOpenAiClient() {
-    const apiKey = process.env.OPENAI_API_KEY;
+  private getLlmClient() {
+    const apiKey = process.env.GROQ_API_KEY;
 
     if (!apiKey) {
       return null;
     }
 
-    return new OpenAI({ apiKey });
+    return new OpenAI({
+      apiKey,
+      baseURL: process.env.GROQ_BASE_URL || 'https://api.groq.com/openai/v1',
+    });
   }
 
   private safeJsonParse(content: string) {
@@ -41,7 +44,78 @@ class ExtractionService {
       .replace(/```/g, '')
       .trim();
 
-    return JSON.parse(cleaned);
+    try {
+      return JSON.parse(cleaned);
+    } catch (_error) {
+      const objectMatch = cleaned.match(/\{[\s\S]*\}/);
+
+      if (!objectMatch) {
+        throw new Error('Unable to parse model JSON output');
+      }
+
+      return JSON.parse(objectMatch[0]);
+    }
+  }
+
+  private normalizeTextForHeuristics(text: string) {
+    return text
+      .replace(/\u0000/g, ' ')
+      .replace(/[ \t]+/g, ' ')
+      .replace(/\r/g, '\n')
+      .replace(/\n{3,}/g, '\n\n')
+      .trim();
+  }
+
+  private extractVendorName(text: string, lines: string[]) {
+    const vendorMatch = text.match(/(?:vendor|supplier|seller|from)\s*[:\-]\s*([^\n]+)/i);
+
+    if (vendorMatch?.[1]) {
+      return vendorMatch[1].trim();
+    }
+
+    return lines[0] || null;
+  }
+
+  private extractLineItems(text: string) {
+    const lines = text
+      .split(/\r?\n/)
+      .map((line) => line.trim())
+      .filter(Boolean);
+
+    const parsedItems = lines
+      .map((line) => {
+        const compact = line.replace(/\s+/g, ' ').trim();
+
+        // Common row format: description qty unit_price line_total
+        const rowMatch = compact.match(
+          /^(.*?)(?:\s{1,}|\t+)(\d+(?:\.\d+)?)\s+([0-9,]+(?:\.\d{1,2})?)\s+([0-9,]+(?:\.\d{1,2})?)$/
+        );
+
+        if (!rowMatch) {
+          return null;
+        }
+
+        const description = rowMatch[1]?.trim();
+
+        if (!description || /invoice|subtotal|total|tax|gst|vat/i.test(description)) {
+          return null;
+        }
+
+        return {
+          description,
+          quantity: Number(rowMatch[2]),
+          unit_price: Number(rowMatch[3].replace(/,/g, '')),
+          line_total: Number(rowMatch[4].replace(/,/g, '')),
+        };
+      })
+      .filter(Boolean);
+
+    return parsedItems as Array<{
+      description: string;
+      quantity: number;
+      unit_price: number;
+      line_total: number;
+    }>;
   }
 
   private extractCurrencySymbol(text: string) {
@@ -69,6 +143,7 @@ class ExtractionService {
       /invoice\s*(?:number|no|#)\s*[:\-]?\s*([A-Z0-9\-\/]+)/i,
       /bill\s*(?:id|number|#)\s*[:\-]?\s*([A-Z0-9\-\/]+)/i,
       /inv\s*#\s*[:\-]?\s*([A-Z0-9\-\/]+)/i,
+      /reference\s*(?:number|no|#)\s*[:\-]?\s*([A-Z0-9\-\/]+)/i,
     ];
 
     for (const pattern of patterns) {
@@ -98,64 +173,66 @@ class ExtractionService {
   }
 
   private buildFallbackExtraction(text: string): Partial<ExtractedInvoiceData> {
-    const lines = text
+    const normalizedText = this.normalizeTextForHeuristics(text);
+    const lines = normalizedText
       .split(/\r?\n/)
       .map((line) => line.trim())
       .filter(Boolean);
 
-    const vendorName = lines[0] || null;
+    const vendorName = this.extractVendorName(normalizedText, lines);
+    const lineItems = this.extractLineItems(normalizedText);
 
     return {
       vendor_name: vendorName,
-      invoice_number: this.extractInvoiceNumber(text),
-      invoice_date: this.extractDate(text),
-      currency: this.extractCurrencySymbol(text),
-      total_amount: this.extractAmount('total|grand total|amount due', text) as any,
-      tax_amount: this.extractAmount('tax|vat|gst', text) as any,
-      line_items: [],
+      invoice_number: this.extractInvoiceNumber(normalizedText),
+      invoice_date: this.extractDate(normalizedText),
+      currency: this.extractCurrencySymbol(normalizedText),
+      total_amount: this.extractAmount('total|grand total|amount due|net payable', normalizedText) as any,
+      tax_amount: this.extractAmount('tax|vat|gst|sales tax', normalizedText) as any,
+      line_items: lineItems,
     };
   }
 
   private async runLlmExtraction(rawText: string) {
     const prompt = await promptService.getActivePrompt('invoice_extraction');
-    const openai = this.getOpenAiClient();
+    const llmClient = this.getLlmClient();
 
-    if (!openai) {
+    if (!llmClient) {
       return {
         data: this.buildFallbackExtraction(rawText),
         promptVersion: prompt.version,
       };
     }
 
-    const response = await openai.responses.create({
-      model: process.env.OPENAI_MODEL || 'gpt-4.1-mini',
+    const completion = await llmClient.chat.completions.create({
+      model: process.env.GROQ_MODEL || 'llama-3.3-70b-versatile',
       temperature: 0,
-      input: [
+      messages: [
         {
           role: 'system',
-          content: [{ type: 'input_text', text: prompt.systemPrompt }],
+          content: `${prompt.systemPrompt}\n\nReturn strict JSON only. Do not wrap output in markdown code fences.`,
         },
         {
           role: 'user',
-          content: [
-            {
-              type: 'input_text',
-              text: `${prompt.userPrompt}\n\nInvoice text:\n${rawText}`,
-            },
-          ],
+          content: `${prompt.userPrompt}\n\nInvoice text:\n${rawText}`,
         },
       ],
     });
 
-    const outputText =
-      response.output_text ||
-      response.output
-        ?.flatMap((item: any) => item.content || [])
-        ?.map((item: any) => item.text || '')
-        ?.join('') ||
-      '';
+    const outputText = completion.choices?.[0]?.message?.content;
 
-    const parsed = this.safeJsonParse(outputText);
+    if (!outputText || typeof outputText !== 'string') {
+      throw new Error('LLM returned empty content');
+    }
+
+    let parsed: Partial<ExtractedInvoiceData>;
+
+    try {
+      parsed = this.safeJsonParse(outputText);
+    } catch (_error) {
+      // If the model responds with non-JSON text, fall back to deterministic extraction.
+      parsed = this.buildFallbackExtraction(rawText);
+    }
 
     return {
       data: parsed,
