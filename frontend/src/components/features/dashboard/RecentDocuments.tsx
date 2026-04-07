@@ -99,7 +99,7 @@ export function RecentDocuments() {
           <h3 className="text-xl font-bold text-gray-900">Recent Documents</h3>
           <p className="text-sm text-gray-500 mt-1">Latest processed invoices</p>
         </div>
-        <button className="text-teal-600 hover:text-teal-700 font-medium text-sm flex items-center gap-1">
+        <button className="text-gray-900 border-b border-gray-900 hover:text-gray-600 font-medium text-sm flex items-center gap-1 pb-0.5 transition-colors">
           View All
           <ExternalLink className="w-4 h-4" />
         </button>

@@ -15,10 +15,10 @@ interface MetricsCardProps {
 }
 
 const colorClasses = {
-  blue: 'from-blue-400 to-blue-500',
-  green: 'from-green-400 to-green-500',
-  purple: 'from-purple-400 to-purple-500',
-  yellow: 'from-yellow-400 to-yellow-500',
+  blue: 'bg-gray-100 text-[var(--df-navy)] border border-gray-200',
+  green: 'bg-[#8AE04A]/20 text-[var(--df-navy)] border border-[#8AE04A]/30',
+  purple: 'bg-[var(--df-navy)] text-white',
+  yellow: 'bg-gray-800 text-white',
 };
 
 export function MetricsCard({ 
@@ -38,8 +38,8 @@ export function MetricsCard({
       className="bg-white rounded-2xl p-6 border border-gray-200 shadow-sm hover:shadow-md transition-shadow"
     >
       <div className="flex items-start justify-between mb-4">
-        <div className={`w-12 h-12 bg-gradient-to-br ${colorClasses[color]} rounded-xl flex items-center justify-center`}>
-          <Icon className="w-6 h-6 text-white" />
+        <div className={`w-11 h-11 ${colorClasses[color]} rounded-xl flex items-center justify-center`}>
+          <Icon className="w-5 h-5" />
         </div>
         {trend && (
           <div className={`flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-medium ${

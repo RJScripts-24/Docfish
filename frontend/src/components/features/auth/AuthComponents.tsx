@@ -65,7 +65,7 @@ export function AuthForm({ mode, onToggleMode }: AuthFormProps) {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="you@company.com"
-                className="w-full pl-12 pr-4 py-3 border-2 border-gray-200 rounded-xl focus:border-teal-400 focus:ring-4 focus:ring-teal-100 transition-all outline-none"
+                className="w-full pl-12 pr-4 py-3 border-2 border-gray-200 rounded-xl focus:border-[var(--df-navy)] focus:ring-4 focus:ring-gray-100 transition-all outline-none"
                 required
               />
             </div>
@@ -84,7 +84,7 @@ export function AuthForm({ mode, onToggleMode }: AuthFormProps) {
                   value={organization}
                   onChange={(e) => setOrganization(e.target.value)}
                   placeholder="Your company name"
-                  className="w-full pl-12 pr-4 py-3 border-2 border-gray-200 rounded-xl focus:border-teal-400 focus:ring-4 focus:ring-teal-100 transition-all outline-none"
+                  className="w-full pl-12 pr-4 py-3 border-2 border-gray-200 rounded-xl focus:border-[var(--df-navy)] focus:ring-4 focus:ring-gray-100 transition-all outline-none"
                 />
               </div>
             </div>
@@ -102,7 +102,7 @@ export function AuthForm({ mode, onToggleMode }: AuthFormProps) {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="••••••••"
-                className="w-full pl-12 pr-12 py-3 border-2 border-gray-200 rounded-xl focus:border-teal-400 focus:ring-4 focus:ring-teal-100 transition-all outline-none"
+                className="w-full pl-12 pr-12 py-3 border-2 border-gray-200 rounded-xl focus:border-[var(--df-navy)] focus:ring-4 focus:ring-gray-100 transition-all outline-none"
                 required
               />
               <button
@@ -128,7 +128,7 @@ export function AuthForm({ mode, onToggleMode }: AuthFormProps) {
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
                   placeholder="••••••••"
-                  className="w-full pl-12 pr-12 py-3 border-2 border-gray-200 rounded-xl focus:border-teal-400 focus:ring-4 focus:ring-teal-100 transition-all outline-none"
+                  className="w-full pl-12 pr-12 py-3 border-2 border-gray-200 rounded-xl focus:border-[var(--df-navy)] focus:ring-4 focus:ring-gray-100 transition-all outline-none"
                   required
                 />
                 <button
@@ -146,10 +146,10 @@ export function AuthForm({ mode, onToggleMode }: AuthFormProps) {
           {isSignIn && (
             <div className="flex items-center justify-between">
               <label className="flex items-center gap-2">
-                <input type="checkbox" className="w-4 h-4 rounded border-gray-300 text-teal-500 focus:ring-teal-400" />
+                <input type="checkbox" className="w-4 h-4 rounded border-gray-300 text-[var(--df-navy)] focus:ring-gray-200" />
                 <span className="text-sm text-gray-600">Remember me</span>
               </label>
-              <a href="#" className="text-sm text-teal-600 hover:text-teal-700 font-medium">
+              <a href="#" className="text-sm text-gray-900 border-b border-gray-900 hover:text-gray-600 font-medium pb-0.5 transition-colors">
                 Forgot password?
               </a>
             </div>
@@ -159,7 +159,7 @@ export function AuthForm({ mode, onToggleMode }: AuthFormProps) {
           <button
             type="submit"
             disabled={isLoading}
-            className="w-full py-3 bg-gradient-to-r from-green-400 to-green-500 text-white rounded-xl hover:from-green-500 hover:to-green-600 transition-all shadow-lg hover:shadow-xl font-semibold disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+            className="w-full py-3 bg-[var(--df-lime)] text-gray-900 rounded-xl hover:bg-[#7BC942] transition-colors shadow-sm font-semibold disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
           >
             {isLoading ? (
               <>
@@ -175,9 +175,9 @@ export function AuthForm({ mode, onToggleMode }: AuthFormProps) {
           {!isSignIn && (
             <p className="text-xs text-center text-gray-500">
               By signing up, you agree to our{' '}
-              <a href="#" className="text-teal-600 hover:text-teal-700">Terms</a>
+              <a href="#" className="text-gray-900 border-b border-gray-900 hover:text-gray-600 transition-colors">Terms</a>
               {' & '}
-              <a href="#" className="text-teal-600 hover:text-teal-700">Privacy Policy</a>
+              <a href="#" className="text-gray-900 border-b border-gray-900 hover:text-gray-600 transition-colors">Privacy Policy</a>
             </p>
           )}
         </form>
@@ -224,7 +224,7 @@ export function AuthForm({ mode, onToggleMode }: AuthFormProps) {
         {isSignIn ? "Don't have an account? " : "Already have an account? "}
         <button
           onClick={onToggleMode}
-          className="text-teal-600 hover:text-teal-700 font-semibold"
+          className="text-gray-900 border-b border-gray-900 hover:text-gray-600 font-semibold transition-colors pb-0.5"
         >
           {isSignIn ? 'Sign up' : 'Sign in'}
         </button>
@@ -238,10 +238,8 @@ export function AuthBranding() {
     <div className="relative flex flex-col justify-center p-12 text-white">
       {/* Logo */}
       <Link to="/" className="flex items-center gap-2 mb-12">
-        <div className="w-10 h-10 bg-white rounded-lg flex items-center justify-center">
-          <Fish className="w-6 h-6 text-teal-500" />
-        </div>
-        <span className="text-2xl font-semibold">Docfish</span>
+        <Fish className="w-8 h-8 text-white" />
+        <span className="text-2xl font-bold">Docfish</span>
       </Link>
 
       {/* Main Content */}

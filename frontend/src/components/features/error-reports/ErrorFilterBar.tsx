@@ -73,7 +73,7 @@ export function ErrorFilterBar({
             value={searchQuery}
             onChange={(e) => handleSearchChange(e.target.value)}
             placeholder="Search by invoice, vendor, or error type..."
-            className="w-full pl-12 pr-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+            className="w-full pl-12 pr-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[var(--df-navy)] focus:border-transparent"
           />
         </div>
 
@@ -82,13 +82,13 @@ export function ErrorFilterBar({
           onClick={() => setShowFilters(!showFilters)}
           className={`px-5 py-3 border-2 rounded-xl font-medium transition-all flex items-center gap-2 ${
             showFilters || hasActiveFilters
-              ? 'border-teal-500 bg-teal-50 text-teal-700'
+              ? 'border-[var(--df-navy)] bg-gray-50 text-[var(--df-navy)]'
               : 'border-gray-200 hover:border-gray-300 text-gray-700'
           }`}
         >
           <Filter className="w-5 h-5" />
           Filters
-          {hasActiveFilters && <span className="w-2 h-2 bg-teal-500 rounded-full" />}
+          {hasActiveFilters && <span className="w-2 h-2 bg-[var(--df-lime)] rounded-full" />}
         </button>
       </div>
 
@@ -108,7 +108,7 @@ export function ErrorFilterBar({
             <select
               value={selectedErrorType}
               onChange={(e) => handleErrorTypeChange(e.target.value)}
-              className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent bg-white cursor-pointer"
+              className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[var(--df-navy)] focus:border-transparent bg-white cursor-pointer"
             >
               <option value="all">All Types</option>
               <option value="parsing">Parsing Error</option>
@@ -125,7 +125,7 @@ export function ErrorFilterBar({
             <select
               value={selectedStatus}
               onChange={(e) => handleStatusChange(e.target.value)}
-              className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent bg-white cursor-pointer"
+              className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[var(--df-navy)] focus:border-transparent bg-white cursor-pointer"
             >
               <option value="all">All Status</option>
               <option value="failed">Failed</option>
@@ -141,7 +141,7 @@ export function ErrorFilterBar({
             <select
               value={selectedDateRange}
               onChange={(e) => handleDateChange(e.target.value)}
-              className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent bg-white cursor-pointer"
+              className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[var(--df-navy)] focus:border-transparent bg-white cursor-pointer"
             >
               <option value="all">All Time</option>
               <option value="today">Today</option>

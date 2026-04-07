@@ -126,7 +126,7 @@ export function TestPromptPanel({ isOpen, onClose, onRunTest }: TestPromptPanelP
             className={`w-full px-6 py-3 rounded-xl font-semibold transition-all flex items-center justify-center gap-2 ${
               isRunning
                 ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
-                : 'bg-gradient-to-r from-teal-400 to-teal-500 hover:from-teal-500 hover:to-teal-600 text-white shadow-lg'
+                : 'bg-[var(--df-lime)] hover:bg-[#7BC942] text-gray-900 shadow-sm'
             }`}
           >
             {isRunning ? (

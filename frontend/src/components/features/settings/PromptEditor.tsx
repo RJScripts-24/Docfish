@@ -101,7 +101,7 @@ export function PromptEditor({
               value={versionName}
               onChange={(e) => onVersionNameChange(e.target.value)}
               placeholder="e.g., v1.3 - Enhanced vendor extraction"
-              className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-teal-500"
+              className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[var(--df-navy)]"
             />
           </div>
 
@@ -114,7 +114,7 @@ export function PromptEditor({
               onChange={(e) => onDescriptionChange(e.target.value)}
               placeholder="Brief description of changes or improvements..."
               rows={2}
-              className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-teal-500 resize-none"
+              className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[var(--df-navy)] resize-none"
             />
           </div>
 
@@ -137,7 +137,7 @@ export function PromptEditor({
                 onClick={() => onStatusChange('active')}
                 className={`flex-1 px-4 py-2.5 rounded-xl font-medium transition-all ${
                   status === 'active'
-                    ? 'bg-green-100 text-green-700 border-2 border-green-400'
+                    ? 'bg-[#8AE04A]/20 text-[var(--df-navy)] border-2 border-[#8AE04A]'
                     : 'bg-gray-50 text-gray-600 border border-gray-200 hover:bg-gray-100'
                 }`}
               >
@@ -168,7 +168,7 @@ export function PromptEditor({
             onChange={(e) => onPromptContentChange(e.target.value)}
             placeholder="Enter your prompt template here..."
             rows={20}
-            className="w-full px-4 py-4 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-teal-500 font-mono text-sm resize-none bg-gray-50"
+            className="w-full px-4 py-4 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[var(--df-navy)] font-mono text-sm resize-none bg-gray-50"
             style={{ lineHeight: '1.6' }}
           />
         </div>
@@ -197,7 +197,7 @@ export function PromptEditor({
 
         <button
           onClick={onUpdateVersion}
-          className="flex-1 px-6 py-3 bg-white border-2 border-teal-500 hover:bg-teal-50 text-teal-700 rounded-xl font-semibold transition-all flex items-center justify-center gap-2"
+          className="flex-1 px-6 py-3 bg-white border-2 border-[var(--df-navy)] hover:bg-gray-50 text-[var(--df-navy)] rounded-xl font-semibold transition-all flex items-center justify-center gap-2"
         >
           <Save className="w-5 h-5" />
           Update Current Version
@@ -209,7 +209,7 @@ export function PromptEditor({
           className={`flex-1 px-6 py-3 rounded-xl font-semibold transition-all flex items-center justify-center gap-2 ${
             status === 'active'
               ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
-              : 'bg-gradient-to-r from-green-400 to-green-500 hover:from-green-500 hover:to-green-600 text-white shadow-lg'
+              : 'bg-[var(--df-lime)] hover:bg-[#7BC942] text-gray-900 shadow-sm'
           }`}
         >
           <CheckCircle className="w-5 h-5" />

@@ -218,7 +218,7 @@ export default function SettingsPage() {
               </button>
               <button
                 onClick={handleCreateNew}
-                className="px-5 py-2.5 bg-gradient-to-r from-teal-400 to-teal-500 hover:from-teal-500 hover:to-teal-600 text-white rounded-xl font-semibold transition-all shadow-lg hover:shadow-xl flex items-center gap-2"
+                className="px-5 py-2.5 bg-[var(--df-lime)] hover:bg-[#7BC942] text-gray-900 rounded-xl font-semibold transition-colors shadow-sm flex items-center gap-2"
               >
                 <Plus className="w-5 h-5" />
                 Create New Version

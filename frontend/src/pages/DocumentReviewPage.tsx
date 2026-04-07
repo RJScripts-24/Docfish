@@ -43,7 +43,7 @@ export default function DocumentReviewPage() {
         <div className="flex items-center justify-between max-w-[1920px] mx-auto flex-wrap gap-3">
           {/* Breadcrumb */}
           <div className="flex items-center gap-2 text-sm">
-            <Link to="/documents" className="text-gray-600 hover:text-teal-600 transition-colors font-medium">
+            <Link to="/documents" className="text-gray-600 hover:text-[var(--df-navy)] transition-colors font-medium">
               Invoices
             </Link>
             <ChevronRight className="w-4 h-4 text-gray-400" />
@@ -88,7 +88,7 @@ export default function DocumentReviewPage() {
               }}
               className={`px-6 py-2 rounded-xl font-semibold transition-all flex items-center gap-2 ${
                 hasChanges
-                  ? 'bg-gradient-to-r from-green-400 to-green-500 hover:from-green-500 hover:to-green-600 text-white shadow-lg'
+                  ? 'bg-[var(--df-lime)] hover:bg-[#7BC942] text-gray-900 shadow-sm'
                   : 'bg-gray-200 text-gray-400 cursor-not-allowed'
               }`}
             >

@@ -34,7 +34,7 @@ export function RecentUploads() {
             transition={{ delay: 0.5 + index * 0.1 }}
             className="flex items-center gap-3 p-3 rounded-xl hover:bg-gray-50 transition-colors cursor-pointer"
           >
-            <div className="w-10 h-10 bg-gradient-to-br from-green-100 to-green-200 rounded-lg flex items-center justify-center flex-shrink-0">
+            <div className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center flex-shrink-0">
               <FileText className="w-5 h-5 text-green-600" />
             </div>
             <div className="flex-1 min-w-0">

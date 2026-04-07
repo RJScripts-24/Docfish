@@ -19,18 +19,18 @@ export function ErrorSummaryCards({
       title: 'Failed Documents',
       value: failedCount,
       icon: FileX,
-      color: 'red',
-      bgColor: 'from-red-400 to-red-500',
-      textColor: 'text-red-600',
-      bgLight: 'bg-red-50',
+      color: 'navy',
+      bgColor: 'bg-[var(--df-navy)]',
+      textColor: 'text-[var(--df-navy)]',
+      bgLight: 'bg-gray-50',
     },
     {
       title: 'Needs Review',
       value: needsReviewCount,
       icon: AlertTriangle,
       color: 'yellow',
-      bgColor: 'from-yellow-400 to-yellow-500',
-      textColor: 'text-yellow-600',
+      bgColor: 'bg-yellow-500',
+      textColor: 'text-yellow-700',
       bgLight: 'bg-yellow-50',
     },
     {
@@ -38,19 +38,19 @@ export function ErrorSummaryCards({
       value: validationFailuresCount,
       icon: AlertCircle,
       color: 'orange',
-      bgColor: 'from-orange-400 to-orange-500',
-      textColor: 'text-orange-600',
+      bgColor: 'bg-orange-500',
+      textColor: 'text-orange-700',
       bgLight: 'bg-orange-50',
-      subtitle: 'Line item mismatch, missing fields',
+      subtitle: 'Line item mismatch',
     },
     {
-      title: 'Avg Retry Success Rate',
+      title: 'Success Rate',
       value: `${successRate}%`,
       icon: TrendingUp,
-      color: 'green',
-      bgColor: 'from-green-400 to-green-500',
-      textColor: 'text-green-600',
-      bgLight: 'bg-green-50',
+      color: 'lime',
+      bgColor: 'bg-[var(--df-lime)]',
+      textColor: 'text-gray-900',
+      bgLight: 'bg-lime-50',
     },
   ];
 
@@ -67,8 +67,8 @@ export function ErrorSummaryCards({
             className="bg-white rounded-2xl p-6 border border-gray-200 shadow-sm hover:shadow-md transition-shadow"
           >
             <div className="flex items-start justify-between mb-4">
-              <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${card.bgColor} flex items-center justify-center`}>
-                <Icon className="w-6 h-6 text-white" />
+              <div className={`w-10 h-10 rounded-lg ${card.bgColor} flex items-center justify-center`}>
+                <Icon className={`w-5 h-5 ${card.title === 'Success Rate' ? 'text-gray-900' : 'text-white'}`} />
               </div>
             </div>
             <p className="text-sm text-gray-600 mb-1">{card.title}</p>

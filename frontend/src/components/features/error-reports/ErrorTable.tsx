@@ -90,36 +90,36 @@ export function ErrorTable({
         <table className="w-full">
           <thead className="bg-gray-50 border-b border-gray-200">
             <tr>
-              <th className="px-6 py-4 text-left">
+              <th className="px-3 py-3 text-left">
                 <input
                   type="checkbox"
                   checked={allSelected}
                   onChange={(e) => onSelectAll(e.target.checked)}
-                  className="w-4 h-4 rounded border-gray-300 text-teal-500 focus:ring-teal-500 cursor-pointer"
+                  className="w-4 h-4 rounded border-gray-300 text-[var(--df-navy)] focus:ring-[var(--df-navy)] cursor-pointer"
                 />
               </th>
-              <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+              <th className="px-3 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
                 Document Name
               </th>
-              <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+              <th className="hidden lg:table-cell px-3 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
                 Vendor Name
               </th>
-              <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+              <th className="hidden sm:table-cell px-3 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
                 Error Type
               </th>
-              <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+              <th className="px-3 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
                 Error Message
               </th>
-              <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+              <th className="hidden md:table-cell px-3 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
                 Status
               </th>
-              <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+              <th className="hidden xl:table-cell px-3 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
                 Last Attempt
               </th>
-              <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+              <th className="hidden lg:table-cell px-3 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
                 Retries
               </th>
-              <th className="px-6 py-4 text-right text-xs font-semibold text-gray-600 uppercase tracking-wider">
+              <th className="px-3 py-3 text-right text-xs font-semibold text-gray-600 uppercase tracking-wider">
                 Actions
               </th>
             </tr>
@@ -134,29 +134,29 @@ export function ErrorTable({
                 className="hover:bg-gray-50 transition-colors cursor-pointer"
                 onClick={() => onViewDocument(doc.id)}
               >
-                <td className="px-6 py-4" onClick={(e) => e.stopPropagation()}>
+                <td className="px-3 py-3" onClick={(e) => e.stopPropagation()}>
                   <input
                     type="checkbox"
                     checked={selectedIds.includes(doc.id)}
                     onChange={() => onSelectDocument(doc.id)}
-                    className="w-4 h-4 rounded border-gray-300 text-teal-500 focus:ring-teal-500 cursor-pointer"
+                    className="w-4 h-4 rounded border-gray-300 text-[var(--df-navy)] focus:ring-[var(--df-navy)] cursor-pointer"
                   />
                 </td>
-                <td className="px-6 py-4">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 bg-gradient-to-br from-red-100 to-red-200 rounded-lg flex items-center justify-center">
-                      <FileX className="w-5 h-5 text-red-600" />
+                <td className="px-3 py-3">
+                  <div className="flex items-center gap-2">
+                    <div className="w-8 h-8 bg-gray-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                      <FileX className="w-4 h-4 text-red-600" />
                     </div>
-                    <div>
-                      <div className="font-medium text-gray-900">{doc.name}</div>
-                      <div className="text-xs text-gray-500">{doc.id}</div>
+                    <div className="min-w-0">
+                      <div className="font-medium text-gray-900 text-sm truncate max-w-[120px] sm:max-w-[150px]">{doc.name}</div>
+                      <div className="text-xs text-gray-500 truncate">{doc.id}</div>
                     </div>
                   </div>
                 </td>
-                <td className="px-6 py-4 text-sm text-gray-900">{doc.vendor}</td>
-                <td className="px-6 py-4">
+                <td className="hidden lg:table-cell px-3 py-3 text-sm text-gray-900 whitespace-nowrap">{doc.vendor}</td>
+                <td className="hidden sm:table-cell px-3 py-3 whitespace-nowrap">
                   <span
-                    className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium border gap-1 ${getErrorTypeColor(
+                    className={`inline-flex items-center px-2 py-1 rounded-full text-[10px] font-medium border gap-1 whitespace-nowrap ${getErrorTypeColor(
                       doc.errorType
                     )}`}
                   >
@@ -164,49 +164,49 @@ export function ErrorTable({
                     {getErrorTypeText(doc.errorType)}
                   </span>
                 </td>
-                <td className="px-6 py-4">
-                  <div className="max-w-xs truncate text-sm text-gray-600" title={doc.errorMessage}>
+                <td className="px-3 py-3">
+                  <div className="max-w-[150px] sm:max-w-xs truncate text-xs text-gray-600" title={doc.errorMessage}>
                     {doc.errorMessage}
                   </div>
                 </td>
-                <td className="px-6 py-4">
+                <td className="hidden md:table-cell px-3 py-3 whitespace-nowrap">
                   <span
-                    className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium border ${getStatusColor(
+                    className={`inline-flex items-center px-2 py-1 rounded-full text-[10px] font-medium border whitespace-nowrap ${getStatusColor(
                       doc.status
                     )}`}
                   >
                     {getStatusText(doc.status)}
                   </span>
                 </td>
-                <td className="px-6 py-4 text-sm text-gray-600">{doc.lastAttempt}</td>
-                <td className="px-6 py-4">
+                <td className="hidden xl:table-cell px-3 py-3 text-sm text-gray-600 whitespace-nowrap">{doc.lastAttempt}</td>
+                <td className="hidden lg:table-cell px-3 py-3 whitespace-nowrap text-center">
                   <span className="text-sm font-semibold text-gray-900">{doc.retryCount}</span>
                 </td>
-                <td className="px-6 py-4" onClick={(e) => e.stopPropagation()}>
-                  <div className="flex items-center justify-end gap-2">
+                <td className="px-3 py-3 whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
+                  <div className="flex items-center justify-end gap-1">
                     <button
                       onClick={() => onViewDocument(doc.id)}
-                      className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                      className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors"
                       title="View Details"
                     >
                       <Eye className="w-4 h-4 text-gray-600" />
                     </button>
                     <button
                       onClick={() => onRetry(doc.id)}
-                      className="p-2 hover:bg-green-50 rounded-lg transition-colors"
+                      className="p-1.5 hover:bg-green-50 rounded-lg transition-colors"
                       title="Retry"
                     >
                       <RefreshCw className="w-4 h-4 text-green-600" />
                     </button>
                     <button
                       onClick={() => onDelete(doc.id)}
-                      className="p-2 hover:bg-red-50 rounded-lg transition-colors"
+                      className="p-1.5 hover:bg-red-50 rounded-lg transition-colors"
                       title="Delete"
                     >
                       <Trash2 className="w-4 h-4 text-red-600" />
                     </button>
                     <button
-                      className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                      className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors"
                       title="Download Logs"
                     >
                       <Download className="w-4 h-4 text-gray-600" />

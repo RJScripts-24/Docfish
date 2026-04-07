@@ -66,8 +66,8 @@ export function UploadZone({ onFilesAdded }: UploadZoneProps) {
       onDrop={handleDrop}
       className={`relative border-3 border-dashed rounded-3xl p-16 text-center transition-all cursor-pointer ${
         isDragging
-          ? 'border-teal-500 bg-teal-50 scale-[1.02] shadow-xl'
-          : 'border-gray-300 bg-white hover:border-teal-400 hover:bg-teal-50/50'
+          ? 'border-[var(--df-navy)] bg-gray-50 scale-[1.02] shadow-xl'
+          : 'border-gray-300 bg-white hover:border-[var(--df-navy)] hover:bg-gray-50/50'
       }`}
     >
       <input
@@ -88,8 +88,8 @@ export function UploadZone({ onFilesAdded }: UploadZoneProps) {
           transition={{ duration: 0.3 }}
           className={`w-24 h-24 mx-auto mb-6 rounded-2xl flex items-center justify-center ${
             isDragging
-              ? 'bg-gradient-to-br from-teal-400 to-teal-600'
-              : 'bg-gradient-to-br from-gray-100 to-gray-200'
+              ? 'bg-[var(--df-navy)]'
+              : 'bg-gray-100'
           }`}
         >
           <Upload className={`w-12 h-12 ${isDragging ? 'text-white' : 'text-gray-600'}`} />
@@ -134,7 +134,7 @@ export function FileListItem({ file, onRemove }: FileListItemProps) {
         return <AlertCircle className="w-5 h-5 text-red-600" />;
       default:
         return (
-          <div className="w-5 h-5 border-2 border-teal-600 border-t-transparent rounded-full animate-spin" />
+          <div className="w-5 h-5 border-2 border-[#8AE04A] border-t-transparent rounded-full animate-spin" />
         );
     }
   };
@@ -146,7 +146,7 @@ export function FileListItem({ file, onRemove }: FileListItemProps) {
       case 'error':
         return 'bg-red-500';
       default:
-        return 'bg-teal-500';
+        return 'bg-[var(--df-lime)]';
     }
   };
 

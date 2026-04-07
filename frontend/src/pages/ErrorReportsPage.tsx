@@ -200,21 +200,6 @@ export default function ErrorReportsPage() {
                 Monitor failed documents and resolve extraction issues
               </p>
             </div>
-            <div className="flex gap-3">
-              <Link to="/upload">
-                <button className="px-5 py-2.5 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 transition-all font-medium text-gray-700 flex items-center gap-2">
-                  <Upload className="w-5 h-5" />
-                  Upload Document
-                </button>
-              </Link>
-              <button
-                onClick={handleRetryAll}
-                className="px-5 py-2.5 bg-gradient-to-r from-green-400 to-green-500 hover:from-green-500 hover:to-green-600 text-white rounded-xl font-semibold transition-all shadow-lg hover:shadow-xl flex items-center gap-2"
-              >
-                <RefreshCw className="w-5 h-5" />
-                Retry All Failed
-              </button>
-            </div>
           </div>
 
           {/* High Failure Alert */}

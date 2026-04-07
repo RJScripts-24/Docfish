@@ -80,11 +80,11 @@ export default function UploadPage() {
                   initial={{ opacity: 0, scale: 0.9 }}
                   animate={{ opacity: 1, scale: 1 }}
                   onClick={handleStartProcessing}
-                  className="w-full py-4 bg-gradient-to-r from-green-400 to-green-500 hover:from-green-500 hover:to-green-600 text-white rounded-2xl font-semibold text-lg shadow-lg hover:shadow-xl transition-all flex items-center justify-center gap-3"
+                  className="w-full relative py-4 bg-[var(--df-lime)] text-gray-900 rounded-xl font-semibold text-lg shadow-sm hover:bg-[#7BC942] transition-colors flex items-center justify-center gap-3 border border-transparent"
                 >
                   <Sparkles className="w-6 h-6" />
                   Start Processing ({completedCount} {completedCount === 1 ? 'Document' : 'Documents'})
-                  <p className="text-sm font-normal text-white/80 absolute bottom-1">
+                  <p className="text-xs font-normal text-gray-700 absolute bottom-1">
                     AI will extract and validate invoice data
                   </p>
                 </motion.button>

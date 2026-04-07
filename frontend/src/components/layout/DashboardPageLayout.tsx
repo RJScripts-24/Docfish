@@ -9,13 +9,15 @@ interface DashboardPageLayoutProps {
 
 export function DashboardPageLayout({ children, mainClassName }: DashboardPageLayoutProps) {
   return (
-    <div className="flex min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
+    <div className="flex h-screen overflow-hidden bg-gradient-to-br from-gray-50 to-gray-100">
       <Sidebar />
 
-      <div className="flex-1 lg:ml-64">
+      <div className="flex-1 flex flex-col min-w-0 h-screen overflow-y-auto overflow-x-hidden lg:pl-64">
         <DashboardHeader />
 
-        <main className={mainClassName}>{children}</main>
+        <main className={`flex-1 w-full max-w-full ${mainClassName}`}>
+          {children}
+        </main>
       </div>
     </div>
   );

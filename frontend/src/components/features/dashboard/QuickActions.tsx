@@ -8,24 +8,27 @@ export function QuickActions() {
       icon: Upload,
       label: 'Upload New Invoice',
       description: 'Process a single document',
-      color: 'from-green-400 to-green-500',
-      hoverColor: 'hover:from-green-500 hover:to-green-600',
+      bgColor: 'bg-[var(--df-navy)]',
+      textColor: 'text-white',
+      hoverColor: 'hover:bg-gray-800',
       path: '/upload',
     },
     {
       icon: FileStack,
       label: 'Bulk Upload',
       description: 'Upload multiple documents',
-      color: 'from-blue-400 to-blue-500',
-      hoverColor: 'hover:from-blue-500 hover:to-blue-600',
+      bgColor: 'bg-gray-100',
+      textColor: 'text-[var(--df-navy)]',
+      hoverColor: 'hover:bg-gray-200',
       path: '/upload?bulk=true',
     },
     {
       icon: RefreshCw,
       label: 'Reprocess Failed',
       description: 'Retry error documents',
-      color: 'from-purple-400 to-purple-500',
-      hoverColor: 'hover:from-purple-500 hover:to-purple-600',
+      bgColor: 'bg-[#8AE04A]/20',
+      textColor: 'text-[var(--df-navy)]',
+      hoverColor: 'hover:bg-[#8AE04A]/30',
       path: '/documents?status=error',
     },
   ];
@@ -51,11 +54,11 @@ export function QuickActions() {
                 initial={{ opacity: 0, scale: 0.9 }}
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ duration: 0.3, delay: 0.6 + index * 0.1 }}
-                className={`w-full bg-gradient-to-br ${action.color} ${action.hoverColor} text-white rounded-xl p-6 transition-all shadow-md hover:shadow-lg text-left group`}
+                className={`w-full ${action.bgColor} ${action.textColor} ${action.hoverColor} rounded-xl p-6 transition-colors shadow-sm text-left group border border-transparent hover:border-gray-300`}
               >
                 <Icon className="w-8 h-8 mb-3 group-hover:scale-110 transition-transform" />
                 <div className="font-semibold text-lg mb-1">{action.label}</div>
-                <div className="text-sm text-white/80">{action.description}</div>
+                <div className="text-sm opacity-80">{action.description}</div>
               </motion.button>
             </Link>
           );

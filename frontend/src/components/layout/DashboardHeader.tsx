@@ -1,7 +1,10 @@
 import { Search, Bell, Upload } from 'lucide-react';
-import { Link } from 'react-router';
+import { Link, useLocation } from 'react-router';
 
 export function DashboardHeader() {
+  const location = useLocation();
+  const isErrorReports = location.pathname.includes('/error-reports');
+
   return (
     <header className="bg-white border-b border-gray-200 px-8 py-4 flex items-center justify-between">
       {/* Left - Page Title */}
@@ -18,7 +21,7 @@ export function DashboardHeader() {
           <input
             type="text"
             placeholder="Search documents..."
-            className="pl-10 pr-4 py-2 w-64 border border-gray-200 rounded-xl focus:border-teal-400 focus:ring-4 focus:ring-teal-100 transition-all outline-none"
+            className="pl-10 pr-4 py-2 w-64 border border-gray-200 rounded-xl focus:border-[var(--df-navy)] focus:ring-4 focus:ring-[var(--df-navy)] focus:ring-opacity-20 transition-all outline-none"
           />
         </div>
 
@@ -29,15 +32,17 @@ export function DashboardHeader() {
         </button>
 
         {/* Upload Button */}
-        <Link to="/upload">
-          <button className="px-5 py-2 bg-gradient-to-r from-green-400 to-green-500 text-white rounded-xl hover:from-green-500 hover:to-green-600 transition-all shadow-md flex items-center gap-2 font-medium">
-            <Upload className="w-5 h-5" />
-            Upload Document
-          </button>
-        </Link>
+        {!isErrorReports && (
+          <Link to="/upload">
+            <button className="px-5 py-2 bg-[var(--df-lime)] text-gray-900 rounded-lg hover:bg-[#7BC942] transition-colors shadow-sm flex items-center gap-2 font-semibold">
+              <Upload className="w-5 h-5" />
+              Upload Document
+            </button>
+          </Link>
+        )}
 
         {/* User Avatar */}
-        <button className="w-10 h-10 bg-gradient-to-br from-purple-400 to-purple-600 rounded-full flex items-center justify-center text-white font-medium hover:shadow-lg transition-shadow">
+        <button className="w-10 h-10 bg-[var(--df-navy)] rounded-full flex items-center justify-center text-white font-medium hover:bg-gray-800 transition-colors">
           G
         </button>
       </div>

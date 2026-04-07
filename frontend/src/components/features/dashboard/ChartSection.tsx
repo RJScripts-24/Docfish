@@ -62,7 +62,7 @@ export function ChartSection() {
               onClick={() => setTimeRange(range)}
               className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
                 timeRange === range
-                  ? 'bg-white text-teal-600 shadow-sm'
+                  ? 'bg-white text-[var(--df-navy)] shadow-sm'
                   : 'text-gray-600 hover:text-gray-900'
               }`}
             >
@@ -97,9 +97,9 @@ export function ChartSection() {
             <Line 
               type="monotone" 
               dataKey="documents" 
-              stroke="#14b8a6" 
+              stroke="#8AE04A" 
               strokeWidth={3}
-              dot={{ fill: '#14b8a6', r: 4 }}
+              dot={{ fill: '#0D1117', r: 4 }}
               activeDot={{ r: 6 }}
             />
           </LineChart>

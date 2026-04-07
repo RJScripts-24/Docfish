@@ -220,7 +220,7 @@ export default function DocumentsPage() {
                 </button>
               </Link>
               <Link to="/upload" className="flex-1 sm:flex-initial">
-                <button className="w-full sm:w-auto px-4 sm:px-5 py-2.5 bg-gradient-to-r from-green-400 to-green-500 hover:from-green-500 hover:to-green-600 text-white rounded-xl font-semibold transition-all shadow-lg hover:shadow-xl flex items-center justify-center gap-2 text-sm sm:text-base">
+                <button className="w-full sm:w-auto px-4 sm:px-5 py-2.5 bg-[var(--df-lime)] hover:bg-[#7BC942] text-gray-900 rounded-xl font-semibold transition-colors shadow-sm flex items-center justify-center gap-2 text-sm sm:text-base">
                   <Upload className="w-5 h-5" />
                   <span className="hidden sm:inline">Upload Invoice</span>
                   <span className="sm:hidden">Upload</span>
