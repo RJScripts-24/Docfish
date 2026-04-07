@@ -2,60 +2,132 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import User from '../models/User.model';
 
-const generateToken = (id: string): string => {
-  return jwt.sign({ id }, process.env.JWT_SECRET as string, {
-    expiresIn: '30d',
-  });
-};
+export interface RegisterUserInput {
+  name: string;
+  email: string;
+  password: string;
+}
 
-export const registerUser = async (email: string, password: string) => {
-  const userExists = await User.findOne({ email });
+export interface LoginUserInput {
+  email: string;
+  password: string;
+}
 
-  if (userExists) {
-    throw new Error('User already exists');
-  }
+export interface AuthTokenPayload {
+  userId: string;
+  email: string;
+}
 
-  const salt = await bcrypt.genSalt(10);
-  const hashedPassword = await bcrypt.hash(password, salt);
-
-  const user = await User.create({
-    email,
-    password: hashedPassword,
-  });
-
-  const token = generateToken(user.id);
-
-  const userResponse = {
-    _id: user._id,
-    email: user.email,
-    createdAt: user.createdAt,
-    updatedAt: user.updatedAt,
+export interface AuthResponse {
+  user: {
+    id: string;
+    name: string;
+    email: string;
+    createdAt?: Date | string;
+    updatedAt?: Date | string;
   };
+  token: string;
+}
 
-  return { user: userResponse, token };
-};
+class AuthService {
+  private readonly saltRounds = Number(process.env.BCRYPT_SALT_ROUNDS || 10);
 
-export const loginUser = async (email: string, password: string) => {
-  const user = await User.findOne({ email });
+  private getJwtSecret(): string {
+    const secret = process.env.JWT_SECRET;
 
-  if (!user || !user.password) {
-    throw new Error('Invalid credentials');
+    if (!secret) {
+      throw new Error('JWT_SECRET is not configured');
+    }
+
+    return secret;
   }
 
-  const isMatch = await bcrypt.compare(password, user.password);
-
-  if (!isMatch) {
-    throw new Error('Invalid credentials');
+  private getJwtExpiresIn(): string {
+    return process.env.JWT_EXPIRES_IN || '7d';
   }
 
-  const token = generateToken(user.id);
+  private generateToken(payload: AuthTokenPayload): string {
+    return jwt.sign(payload, this.getJwtSecret(), {
+      expiresIn: this.getJwtExpiresIn(),
+    });
+  }
 
-  const userResponse = {
-    _id: user._id,
-    email: user.email,
-    createdAt: user.createdAt,
-    updatedAt: user.updatedAt,
-  };
+  private sanitizeUser(user: any) {
+    return {
+      id: user._id.toString(),
+      name: user.name,
+      email: user.email,
+      createdAt: user.createdAt,
+      updatedAt: user.updatedAt,
+    };
+  }
 
-  return { user: userResponse, token };
-};
+  async register(input: RegisterUserInput): Promise<AuthResponse> {
+    const email = input.email.trim().toLowerCase();
+    const existingUser = await User.findOne({ email });
+
+    if (existingUser) {
+      throw new Error('User already exists with this email');
+    }
+
+    const hashedPassword = await bcrypt.hash(input.password, this.saltRounds);
+
+    const user = await User.create({
+      name: input.name.trim(),
+      email,
+      password: hashedPassword,
+    });
+
+    const token = this.generateToken({
+      userId: user._id.toString(),
+      email: user.email,
+    });
+
+    return {
+      user: this.sanitizeUser(user),
+      token,
+    };
+  }
+
+  async login(input: LoginUserInput): Promise<AuthResponse> {
+    const email = input.email.trim().toLowerCase();
+    const user = await User.findOne({ email }).select('+password');
+
+    if (!user) {
+      throw new Error('Invalid email or password');
+    }
+
+    const isPasswordValid = await bcrypt.compare(input.password, user.password);
+
+    if (!isPasswordValid) {
+      throw new Error('Invalid email or password');
+    }
+
+    const token = this.generateToken({
+      userId: user._id.toString(),
+      email: user.email,
+    });
+
+    return {
+      user: this.sanitizeUser(user),
+      token,
+    };
+  }
+
+  async verifyToken(token: string): Promise<AuthTokenPayload> {
+    const decoded = jwt.verify(token, this.getJwtSecret()) as AuthTokenPayload;
+    return decoded;
+  }
+
+  async getUserById(userId: string) {
+    const user = await User.findById(userId);
+
+    if (!user) {
+      throw new Error('User not found');
+    }
+
+    return this.sanitizeUser(user);
+  }
+}
+
+export default new AuthService();
