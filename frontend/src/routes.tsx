@@ -1,12 +1,15 @@
 import { createBrowserRouter } from "react-router";
 import LandingPage from "./pages/LandingPage";
 import AuthPage from "./pages/AuthPage";
+import AuthCallbackPage from "./pages/AuthCallbackPage";
 import DashboardPage from "./pages/DashboardPage";
+import AnalyticsPage from "./pages/AnalyticsPage";
 import DocumentsPage from "./pages/DocumentsPage";
 import UploadPage from "./pages/UploadPage";
 import ErrorReportsPage from "./pages/ErrorReportsPage";
 import SettingsPage from "./pages/SettingsPage";
 import DocumentReviewPage from "./pages/DocumentReviewPage";
+import { GuestOnlyRoute, ProtectedRoute } from "./components/routing/ProtectedRoute";
 
 function ErrorBoundary() {
   return (
@@ -25,42 +28,84 @@ function ErrorBoundary() {
 export const router = createBrowserRouter([
   {
     path: "/",
-    Component: LandingPage,
+    element: <LandingPage />,
     errorElement: <ErrorBoundary />,
   },
   {
     path: "/auth",
-    Component: AuthPage,
+    element: (
+      <GuestOnlyRoute>
+        <AuthPage />
+      </GuestOnlyRoute>
+    ),
+    errorElement: <ErrorBoundary />,
+  },
+  {
+    path: "/auth/callback",
+    element: <AuthCallbackPage />,
     errorElement: <ErrorBoundary />,
   },
   {
     path: "/dashboard",
-    Component: DashboardPage,
+    element: (
+      <ProtectedRoute>
+        <DashboardPage />
+      </ProtectedRoute>
+    ),
+    errorElement: <ErrorBoundary />,
+  },
+  {
+    path: "/analytics",
+    element: (
+      <ProtectedRoute>
+        <AnalyticsPage />
+      </ProtectedRoute>
+    ),
     errorElement: <ErrorBoundary />,
   },
   {
     path: "/documents",
-    Component: DocumentsPage,
+    element: (
+      <ProtectedRoute>
+        <DocumentsPage />
+      </ProtectedRoute>
+    ),
     errorElement: <ErrorBoundary />,
   },
   {
     path: "/documents/:id",
-    Component: DocumentReviewPage,
+    element: (
+      <ProtectedRoute>
+        <DocumentReviewPage />
+      </ProtectedRoute>
+    ),
     errorElement: <ErrorBoundary />,
   },
   {
     path: "/upload",
-    Component: UploadPage,
+    element: (
+      <ProtectedRoute>
+        <UploadPage />
+      </ProtectedRoute>
+    ),
     errorElement: <ErrorBoundary />,
   },
   {
     path: "/error-reports",
-    Component: ErrorReportsPage,
+    element: (
+      <ProtectedRoute>
+        <ErrorReportsPage />
+      </ProtectedRoute>
+    ),
     errorElement: <ErrorBoundary />,
   },
   {
     path: "/settings",
-    Component: SettingsPage,
+    element: (
+      <ProtectedRoute>
+        <SettingsPage />
+      </ProtectedRoute>
+    ),
     errorElement: <ErrorBoundary />,
   },
   {

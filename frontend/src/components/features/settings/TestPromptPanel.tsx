@@ -1,69 +1,39 @@
 import { motion } from 'motion/react';
 import { useState } from 'react';
 import { Upload, Play, Code2, X } from 'lucide-react';
+import { PromptTestResult } from '../../../lib/types';
 
 interface TestPromptPanelProps {
   isOpen: boolean;
   onClose: () => void;
-  onRunTest: (sampleText: string) => void;
+  onRunTest: (sampleText: string) => Promise<PromptTestResult>;
 }
 
 export function TestPromptPanel({ isOpen, onClose, onRunTest }: TestPromptPanelProps) {
   const [sampleText, setSampleText] = useState('');
-  const [testResult, setTestResult] = useState<any>(null);
+  const [testResult, setTestResult] = useState<PromptTestResult | null>(null);
   const [isRunning, setIsRunning] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   if (!isOpen) return null;
 
   const handleRunTest = async () => {
     if (!sampleText.trim()) {
-      alert('Please enter sample text or upload a document');
+      setErrorMessage('Please enter sample text before running a prompt test.');
       return;
     }
 
     setIsRunning(true);
-    
-    // Simulate API call
-    setTimeout(() => {
-      const mockResult = {
-        vendor_name: {
-          value: 'Acme Corporation',
-          confidence: 0.95,
-        },
-        invoice_number: {
-          value: 'INV-2024-001',
-          confidence: 0.98,
-        },
-        invoice_date: {
-          value: '2024-01-15',
-          confidence: 0.92,
-        },
-        total_amount: {
-          value: 12450.0,
-          confidence: 0.96,
-        },
-        line_items: [
-          {
-            description: 'Professional Services',
-            quantity: 1,
-            unit_price: 10000.0,
-            total: 10000.0,
-            confidence: 0.89,
-          },
-          {
-            description: 'Software License',
-            quantity: 1,
-            unit_price: 1205.0,
-            total: 1205.0,
-            confidence: 0.94,
-          },
-        ],
-      };
 
-      setTestResult(mockResult);
+    try {
+      setErrorMessage(null);
+      const result = await onRunTest(sampleText);
+      setTestResult(result);
+    } catch (error) {
+      setErrorMessage(error instanceof Error ? error.message : 'Failed to run prompt test.');
+    } finally {
       setIsRunning(false);
-      onRunTest(sampleText);
-    }, 2000);
+    }
   };
 
   return (
@@ -142,6 +112,12 @@ export function TestPromptPanel({ isOpen, onClose, onRunTest }: TestPromptPanelP
             )}
           </button>
 
+          {errorMessage ? (
+            <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+              {errorMessage}
+            </div>
+          ) : null}
+
           {/* Results Section */}
           {testResult && (
             <motion.div
@@ -159,7 +135,7 @@ export function TestPromptPanel({ isOpen, onClose, onRunTest }: TestPromptPanelP
               </div>
               <div className="bg-gray-900 rounded-xl p-4 overflow-x-auto">
                 <pre className="text-green-400 font-mono text-sm">
-                  {JSON.stringify(testResult, null, 2)}
+                  {testResult.rawOutput}
                 </pre>
               </div>
 
@@ -169,13 +145,15 @@ export function TestPromptPanel({ isOpen, onClose, onRunTest }: TestPromptPanelP
                   <p className="text-xs text-green-600 font-semibold">
                     Average Confidence
                   </p>
-                  <p className="text-2xl font-bold text-green-700 mt-1">94%</p>
+                  <p className="text-2xl font-bold text-green-700 mt-1">{testResult.overallConfidence}%</p>
                 </div>
                 <div className="bg-blue-50 rounded-xl p-3 border border-blue-200">
                   <p className="text-xs text-blue-600 font-semibold">
                     Fields Extracted
                   </p>
-                  <p className="text-2xl font-bold text-blue-700 mt-1">6</p>
+                  <p className="text-2xl font-bold text-blue-700 mt-1">
+                    {Object.keys(testResult.extractedFields || {}).length}
+                  </p>
                 </div>
               </div>
             </motion.div>

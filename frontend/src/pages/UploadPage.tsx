@@ -4,16 +4,41 @@ import { AdvancedSettings } from '../components/features/upload/AdvancedSettings
 import { RecentUploads } from '../components/features/upload/RecentUploads';
 import { motion } from 'motion/react';
 import { Sparkles, Trash2, ExternalLink } from 'lucide-react';
-import { Link } from 'react-router';
+import { Link, useNavigate } from 'react-router';
 import { useUploadQueue } from '../hooks/useUploadQueue';
-import { showInfo } from '../services/feedback';
+import { timeAgo } from '../lib/format';
 
 export default function UploadPage() {
-  const { uploadedFiles, completedCount, addFiles, removeFile, clearAll } = useUploadQueue();
+  const navigate = useNavigate();
+  const { uploadedFiles, completedCount, processingCount, addFiles, removeFile, clearAll } = useUploadQueue();
 
   const handleStartProcessing = () => {
-    showInfo('Processing started! AI will extract and validate invoice data.');
+    navigate('/documents');
   };
+
+  const recentUploads = uploadedFiles
+    .slice()
+    .reverse()
+    .slice(0, 5)
+    .map((file) => ({
+      id: file.id,
+      name: file.file.name,
+      subtitle:
+        file.status === 'done'
+          ? `Completed ${timeAgo(file.createdAt)}`
+          : file.status === 'error'
+          ? file.errorMessage || 'Upload failed'
+          : `Updated ${timeAgo(file.createdAt)}`,
+      status:
+        file.status === 'error'
+          ? 'error'
+          : file.status === 'done'
+          ? 'done'
+          : file.status === 'uploaded'
+          ? 'uploaded'
+          : 'processing',
+      path: file.documentId ? `/documents/${file.documentId}` : undefined,
+    }));
 
   return (
     <DashboardPageLayout mainClassName="p-4 sm:p-6 lg:p-8 xl:p-10 max-w-[1600px] mx-auto space-y-6 sm:space-y-8">
@@ -50,7 +75,7 @@ export default function UploadPage() {
                         Uploaded Files ({uploadedFiles.length})
                       </h3>
                       <p className="text-sm text-gray-500 mt-1">
-                        {completedCount} of {uploadedFiles.length} completed
+                        {completedCount} completed, {processingCount} still processing
                       </p>
                     </div>
                     <button
@@ -75,7 +100,7 @@ export default function UploadPage() {
               )}
 
               {/* Start Processing Button */}
-              {completedCount > 0 && (
+              {(processingCount > 0 || completedCount > 0) && (
                 <motion.button
                   initial={{ opacity: 0, scale: 0.9 }}
                   animate={{ opacity: 1, scale: 1 }}
@@ -83,9 +108,11 @@ export default function UploadPage() {
                   className="df-btn-primary w-full py-4 text-lg mb-8"
                 >
                   <Sparkles className="w-6 h-6" />
-                  Start Processing ({completedCount} {completedCount === 1 ? 'Document' : 'Documents'})
+                  {processingCount > 0
+                    ? `Processing ${processingCount} ${processingCount === 1 ? 'Document' : 'Documents'}`
+                    : `Review ${completedCount} ${completedCount === 1 ? 'Document' : 'Documents'}`}
                   <p className="text-[10px] font-normal text-gray-800 absolute bottom-1 uppercase tracking-tight">
-                    AI will extract and validate invoice data
+                    {processingCount > 0 ? 'Uploads have started on the backend' : 'Open the review workspace'}
                   </p>
                 </motion.button>
               )}
@@ -96,7 +123,7 @@ export default function UploadPage() {
 
             {/* Sidebar - Recent Uploads */}
             <div className="lg:col-span-1">
-              <RecentUploads />
+              <RecentUploads uploads={recentUploads} />
             </div>
           </div>
     </DashboardPageLayout>

@@ -6,8 +6,9 @@ interface UploadedFile {
   id: string;
   file: File;
   progress: number;
-  status: 'uploading' | 'completed' | 'error';
+  status: 'uploading' | 'uploaded' | 'processing' | 'done' | 'error';
   errorMessage?: string;
+  documentId?: string;
 }
 
 interface UploadZoneProps {
@@ -128,7 +129,7 @@ interface FileListItemProps {
 export function FileListItem({ file, onRemove }: FileListItemProps) {
   const getStatusIcon = () => {
     switch (file.status) {
-      case 'completed':
+      case 'done':
         return <Check className="w-5 h-5 text-green-600" />;
       case 'error':
         return <AlertCircle className="w-5 h-5 text-red-600" />;
@@ -141,10 +142,12 @@ export function FileListItem({ file, onRemove }: FileListItemProps) {
 
   const getStatusColor = () => {
     switch (file.status) {
-      case 'completed':
+      case 'done':
         return 'bg-green-500';
       case 'error':
         return 'bg-red-500';
+      case 'processing':
+        return 'bg-blue-500';
       default:
         return 'bg-[var(--df-lime)]';
     }
@@ -152,8 +155,12 @@ export function FileListItem({ file, onRemove }: FileListItemProps) {
 
   const getStatusText = () => {
     switch (file.status) {
-      case 'completed':
-        return 'Uploaded successfully';
+      case 'uploaded':
+        return 'Uploaded to Docfish';
+      case 'processing':
+        return 'AI extraction in progress...';
+      case 'done':
+        return 'Processing complete';
       case 'error':
         return file.errorMessage || 'Upload failed';
       default:
@@ -194,7 +201,7 @@ export function FileListItem({ file, onRemove }: FileListItemProps) {
         </div>
 
         {/* Progress Bar */}
-        {file.status === 'uploading' && (
+        {file.status !== 'done' && file.status !== 'error' && (
           <div className="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
             <motion.div
               initial={{ width: 0 }}

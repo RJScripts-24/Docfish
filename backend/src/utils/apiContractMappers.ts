@@ -310,5 +310,6 @@ export const toUploadedFile = (doc: DocumentLike) => {
     status,
     progress: toUploadProgress(status),
     documentId: status === 'done' ? String(doc._id) : undefined,
+    errorMessage: status === 'error' ? doc.errorMessage || 'Document processing failed' : undefined,
   };
 };

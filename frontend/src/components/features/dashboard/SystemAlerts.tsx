@@ -2,25 +2,38 @@ import { motion } from 'motion/react';
 import { AlertCircle, AlertTriangle, ArrowRight } from 'lucide-react';
 import { Link } from 'react-router';
 
-export function SystemAlerts() {
+interface SystemAlertsProps {
+  reviewCount: number;
+  failedCount: number;
+}
+
+export function SystemAlerts({ reviewCount, failedCount }: SystemAlertsProps) {
   const alerts = [
-    {
+    reviewCount > 0
+      ? {
       type: 'warning' as const,
-      title: '12 documents require review',
+      title: `${reviewCount} document${reviewCount === 1 ? '' : 's'} require review`,
       description: 'Low confidence scores detected',
-      count: 12,
       action: 'Review Now',
       path: '/documents?status=review',
-    },
-    {
+        }
+      : null,
+    failedCount > 0
+      ? {
       type: 'error' as const,
-      title: '4 validation errors',
-      description: 'Missing required fields',
-      count: 4,
+      title: `${failedCount} failed document${failedCount === 1 ? '' : 's'}`,
+      description: 'Retry extraction or inspect validation issues',
       action: 'Fix Issues',
-      path: '/documents?status=error',
-    },
-  ];
+      path: '/error-reports',
+        }
+      : null,
+  ].filter(Boolean) as Array<{
+    type: 'warning' | 'error';
+    title: string;
+    description: string;
+    action: string;
+    path: string;
+  }>;
 
   return (
     <motion.div
@@ -33,6 +46,13 @@ export function SystemAlerts() {
         <h3 className="text-xl font-bold text-gray-900">System Alerts</h3>
         <p className="text-sm text-gray-500 mt-1">Items requiring attention</p>
       </div>
+
+      {alerts.length === 0 ? (
+        <div className="rounded-2xl p-5 border-2 border-green-200 bg-green-50 text-green-900">
+          <h4 className="font-bold mb-1">No active alerts</h4>
+          <p className="text-sm text-green-700">Everything looks healthy across your current document queue.</p>
+        </div>
+      ) : null}
 
       {alerts.map((alert, index) => {
         const isWarning = alert.type === 'warning';

@@ -1,6 +1,6 @@
 import { motion } from 'motion/react';
-import { Search, Filter, X, Calendar, DollarSign } from 'lucide-react';
-import { useState } from 'react';
+import { Search, Filter, X } from 'lucide-react';
+import { useEffect, useState } from 'react';
 
 interface SearchFilterBarProps {
   onSearch: (query: string) => void;
@@ -8,6 +8,10 @@ interface SearchFilterBarProps {
   onFilterDate: (dateRange: string) => void;
   onSort: (sortBy: string) => void;
   onClearFilters: () => void;
+  initialSearch?: string;
+  initialStatus?: string;
+  initialDateFilter?: string;
+  initialSort?: string;
 }
 
 export function SearchFilterBar({
@@ -16,12 +20,32 @@ export function SearchFilterBar({
   onFilterDate,
   onSort,
   onClearFilters,
+  initialSearch = '',
+  initialStatus = 'all',
+  initialDateFilter = 'all',
+  initialSort = 'date-desc',
 }: SearchFilterBarProps) {
-  const [searchQuery, setSearchQuery] = useState('');
-  const [selectedStatus, setSelectedStatus] = useState('all');
-  const [selectedDateRange, setSelectedDateRange] = useState('all');
-  const [selectedSort, setSelectedSort] = useState('date-desc');
+  const [searchQuery, setSearchQuery] = useState(initialSearch);
+  const [selectedStatus, setSelectedStatus] = useState(initialStatus);
+  const [selectedDateRange, setSelectedDateRange] = useState(initialDateFilter);
+  const [selectedSort, setSelectedSort] = useState(initialSort);
   const [showFilters, setShowFilters] = useState(false);
+
+  useEffect(() => {
+    setSearchQuery(initialSearch);
+  }, [initialSearch]);
+
+  useEffect(() => {
+    setSelectedStatus(initialStatus);
+  }, [initialStatus]);
+
+  useEffect(() => {
+    setSelectedDateRange(initialDateFilter);
+  }, [initialDateFilter]);
+
+  useEffect(() => {
+    setSelectedSort(initialSort);
+  }, [initialSort]);
 
   const handleSearchChange = (value: string) => {
     setSearchQuery(value);
@@ -95,12 +119,12 @@ export function SearchFilterBar({
           onChange={(e) => handleSortChange(e.target.value)}
           className="px-6 py-3 bg-white border-[1.5px] border-[var(--df-border)] rounded-[6px] focus:outline-none focus:ring-2 focus:ring-[var(--df-navy)]/5 focus:border-[var(--df-navy)] font-bold text-sm text-[var(--df-black)] cursor-pointer transition-all hover:bg-[var(--df-light-gray)] shadow-[3px_3px_0_var(--df-black)]"
         >
-          <option value="latest">Latest First</option>
-          <option value="oldest">Oldest First</option>
-          <option value="highest">Highest Amount</option>
-          <option value="lowest">Lowest Amount</option>
-          <option value="conf-high">Highest Confidence</option>
-          <option value="conf-low">Lowest Confidence</option>
+          <option value="date-desc">Latest First</option>
+          <option value="date-asc">Oldest First</option>
+          <option value="amount-desc">Highest Amount</option>
+          <option value="amount-asc">Lowest Amount</option>
+          <option value="confidence-desc">Highest Confidence</option>
+          <option value="confidence-asc">Lowest Confidence</option>
         </select>
       </div>
 

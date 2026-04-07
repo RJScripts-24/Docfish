@@ -19,6 +19,21 @@ const errorHandler = (err: any, req: Request, res: Response, next: NextFunction)
     message = Object.values(err.errors).map((val: any) => val.message).join(', ');
   }
 
+  const errorDetails = {
+    method: req.method,
+    path: req.originalUrl,
+    statusCode,
+    message,
+    errorName: err?.name,
+    stack: err?.stack,
+  };
+
+  if (statusCode >= 500) {
+    console.error('[ErrorHandler] Unhandled request error', errorDetails);
+  } else {
+    console.warn('[ErrorHandler] Request validation/client error', errorDetails);
+  }
+
   res.status(statusCode).json({
     error: message,
     stack: process.env.NODE_ENV === 'production' ? undefined : err.stack,

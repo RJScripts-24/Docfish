@@ -1,5 +1,5 @@
 import { motion } from 'motion/react';
-import { Eye, RefreshCw, Trash2, Download, AlertCircle, AlertTriangle, FileX } from 'lucide-react';
+import { Eye, RefreshCw, Trash2, AlertCircle, AlertTriangle, FileX } from 'lucide-react';
 
 export interface ErrorDocument {
   id: string;

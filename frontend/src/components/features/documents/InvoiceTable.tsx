@@ -1,6 +1,5 @@
 import { motion } from 'motion/react';
-import { Eye, RefreshCw, Trash2, Download, FileText } from 'lucide-react';
-import { useState } from 'react';
+import { Eye, RefreshCw, Trash2, FileText } from 'lucide-react';
 
 export interface Invoice {
   id: string;
@@ -132,7 +131,7 @@ export function InvoiceTable({
                   </div>
                 </td>
                 <td className="px-3 py-4 text-sm font-semibold text-[var(--df-black)] whitespace-nowrap">{invoice.vendor}</td>
-                <td className="px-3 py-4 text-xs font-bold text-[var(--df-muted)] uppercase whitespace-nowrap">{invoice.invoiceDate}</td>
+                <td className="px-3 py-4 text-xs font-bold text-[var(--df-muted)] uppercase whitespace-nowrap">{invoice.processingTime}</td>
                 <td className="px-3 py-4 text-sm font-extrabold text-[var(--df-black)] whitespace-nowrap">
                   ${invoice.amount.toLocaleString()}
                 </td>

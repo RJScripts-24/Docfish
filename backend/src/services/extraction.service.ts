@@ -25,6 +25,27 @@ export interface ExtractionOutput {
 }
 
 class ExtractionService {
+  private toErrorDetails(error: unknown) {
+    if (error instanceof Error) {
+      return {
+        name: error.name,
+        message: error.message,
+        stack: error.stack,
+      };
+    }
+
+    return {
+      message: String(error),
+    };
+  }
+
+  private isRecoverablePdfError(error: unknown) {
+    const message =
+      error instanceof Error ? error.message.toLowerCase() : String(error || '').toLowerCase();
+
+    return /xref|pdf|eof|invalid\s+pdf|bad\s+xref/.test(message);
+  }
+
   private getLlmClient() {
     const apiKey = process.env.GROQ_API_KEY;
 
@@ -110,12 +131,88 @@ class ExtractionService {
       })
       .filter(Boolean);
 
-    return parsedItems as Array<{
+    if (parsedItems.length > 0) {
+      return parsedItems as Array<{
+        description: string;
+        quantity: number;
+        unit_price: number;
+        line_total: number;
+      }>;
+    }
+
+    const amountFromToken = (token: string) => {
+      const match = token.match(
+        /(?:INR|USD|EUR|GBP|Rs\.?|\$|€|£)?\s*([0-9,]+(?:\.[0-9]{1,2})?)/i
+      );
+
+      if (!match?.[1]) {
+        return null;
+      }
+
+      return Number(match[1].replace(/,/g, ''));
+    };
+
+    const quantityFromToken = (token: string) => {
+      if (!/^\d+(?:\.\d+)?$/.test(token.trim())) {
+        return null;
+      }
+
+      return Number(token);
+    };
+
+    const headerIndex = lines.findIndex((line, index) => {
+      const normalized = line.toLowerCase();
+      return (
+        normalized === 'description' &&
+        lines[index + 1]?.toLowerCase() === 'qty' &&
+        /unit\s*price/i.test(lines[index + 2] || '')
+      );
+    });
+
+    if (headerIndex === -1) {
+      return [];
+    }
+
+    const sequenceItems: Array<{
       description: string;
       quantity: number;
       unit_price: number;
       line_total: number;
-    }>;
+    }> = [];
+
+    let cursor = headerIndex + 4;
+
+    while (cursor < lines.length) {
+      const description = lines[cursor] || '';
+
+      if (!description || /^total\s*amount/i.test(description) || /^tax\b/i.test(description)) {
+        break;
+      }
+
+      const quantity = quantityFromToken(lines[cursor + 1] || '');
+      const unitPrice = amountFromToken(lines[cursor + 2] || '');
+      const lineTotal = amountFromToken(lines[cursor + 3] || '');
+
+      if (
+        quantity !== null &&
+        unitPrice !== null &&
+        lineTotal !== null &&
+        !/invoice|subtotal|total|tax|gst|vat|amount|qty|unit\s*price/i.test(description)
+      ) {
+        sequenceItems.push({
+          description,
+          quantity,
+          unit_price: unitPrice,
+          line_total: lineTotal,
+        });
+        cursor += 4;
+        continue;
+      }
+
+      cursor += 1;
+    }
+
+    return sequenceItems;
   }
 
   private extractCurrencySymbol(text: string) {
@@ -141,6 +238,7 @@ class ExtractionService {
   private extractInvoiceNumber(text: string) {
     const patterns = [
       /invoice\s*(?:number|no|#)\s*[:\-]?\s*([A-Z0-9\-\/]+)/i,
+      /invoice\s*id\s*[:\-]?\s*([A-Z0-9\-\/]+)/i,
       /bill\s*(?:id|number|#)\s*[:\-]?\s*([A-Z0-9\-\/]+)/i,
       /inv\s*#\s*[:\-]?\s*([A-Z0-9\-\/]+)/i,
       /reference\s*(?:number|no|#)\s*[:\-]?\s*([A-Z0-9\-\/]+)/i,
@@ -194,30 +292,59 @@ class ExtractionService {
   }
 
   private async runLlmExtraction(rawText: string) {
-    const prompt = await promptService.getActivePrompt('invoice_extraction');
+    let promptVersion = 0;
+    let systemPrompt =
+      'You extract invoice data into structured JSON with strong field fidelity.';
+    let userPrompt =
+      'Extract vendor_name, invoice_number, invoice_date, currency, total_amount, tax_amount, and line_items from the provided invoice text. Return JSON only.';
+
+    try {
+      const prompt = await promptService.getActivePrompt('invoice_extraction');
+      promptVersion = prompt.version;
+      systemPrompt = prompt.systemPrompt;
+      userPrompt = prompt.userPrompt;
+    } catch (error) {
+      console.warn('[Extraction] Failed to load active prompt, using default fallback prompt', {
+        error: this.toErrorDetails(error),
+      });
+    }
+
     const llmClient = this.getLlmClient();
 
     if (!llmClient) {
       return {
         data: this.buildFallbackExtraction(rawText),
-        promptVersion: prompt.version,
+        promptVersion,
       };
     }
 
-    const completion = await llmClient.chat.completions.create({
-      model: process.env.GROQ_MODEL || 'llama-3.3-70b-versatile',
-      temperature: 0,
-      messages: [
-        {
-          role: 'system',
-          content: `${prompt.systemPrompt}\n\nReturn strict JSON only. Do not wrap output in markdown code fences.`,
-        },
-        {
-          role: 'user',
-          content: `${prompt.userPrompt}\n\nInvoice text:\n${rawText}`,
-        },
-      ],
-    });
+    let completion;
+
+    try {
+      completion = await llmClient.chat.completions.create({
+        model: process.env.GROQ_MODEL || 'llama-3.3-70b-versatile',
+        temperature: 0,
+        messages: [
+          {
+            role: 'system',
+            content: `${systemPrompt}\n\nReturn strict JSON only. Do not wrap output in markdown code fences.`,
+          },
+          {
+            role: 'user',
+            content: `${userPrompt}\n\nInvoice text:\n${rawText}`,
+          },
+        ],
+      });
+    } catch (error) {
+      console.warn('[Extraction] LLM request failed, using heuristic extraction fallback', {
+        error: this.toErrorDetails(error),
+      });
+
+      return {
+        data: this.buildFallbackExtraction(rawText),
+        promptVersion,
+      };
+    }
 
     const outputText = completion.choices?.[0]?.message?.content;
 
@@ -236,7 +363,7 @@ class ExtractionService {
 
     return {
       data: parsed,
-      promptVersion: prompt.version,
+      promptVersion,
     };
   }
 
@@ -267,6 +394,14 @@ class ExtractionService {
     document.processingStartedAt = new Date();
     await document.save();
 
+    console.info('[Extraction] Started processing document', {
+      documentId: input.documentId,
+      filename: input.originalFilename,
+      mimeType: input.mimeType,
+      filePath: input.filePath,
+      userId: input.userId || null,
+    });
+
     try {
       const result = await this.extractFromPdf(input.filePath);
 
@@ -288,12 +423,77 @@ class ExtractionService {
         processingTimeMs: result.processingTimeMs,
       });
 
+      console.info('[Extraction] Completed processing document', {
+        documentId: input.documentId,
+        status: document.status,
+        processingTimeMs: result.processingTimeMs,
+        validationErrorCount: result.validation.validationErrors.length,
+      });
+
       return document;
     } catch (error: any) {
+      if (this.isRecoverablePdfError(error)) {
+        const validation = validationService.validate({
+          vendor_name: null,
+          invoice_number: null,
+          invoice_date: null,
+          currency: null,
+          total_amount: null,
+          tax_amount: null,
+          line_items: [],
+        });
+
+        validation.validationErrors.unshift({
+          field: 'document',
+          code: 'PDF_PARSE_WARNING',
+          message:
+            'Text extraction failed for this PDF. The file was uploaded and sent to manual review.',
+        });
+
+        const processingTimeMs = document.processingStartedAt
+          ? Date.now() - document.processingStartedAt.getTime()
+          : null;
+
+        document.status = 'PROCESSED';
+        document.extractedData = validation.normalizedData;
+        document.validationErrors = validation.validationErrors;
+        document.confidenceScore = validation.confidenceScore;
+        document.processingTimeMs = processingTimeMs;
+        document.rawText = '';
+        document.errorMessage = null;
+        document.processedAt = new Date();
+
+        await document.save();
+        await storageService.saveJsonResult(document._id.toString(), {
+          extractedData: validation.normalizedData,
+          validation,
+          rawText: '',
+          promptVersion: null,
+          processingTimeMs: processingTimeMs || 0,
+        });
+
+        console.warn('[Extraction] Recovered from PDF parse error and moved document to review', {
+          documentId: input.documentId,
+          filename: input.originalFilename,
+          processingTimeMs,
+          error: this.toErrorDetails(error),
+        });
+
+        return document;
+      }
+
       document.status = 'FAILED';
       document.errorMessage = error.message || 'Extraction failed';
       document.processedAt = new Date();
       await document.save();
+
+      console.error('[Extraction] Failed processing document', {
+        documentId: input.documentId,
+        filename: input.originalFilename,
+        status: document.status,
+        error: this.toErrorDetails(error),
+      });
+
       throw error;
     }
   }

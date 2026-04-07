@@ -1,17 +1,26 @@
 import { 
   LogOut,
   Fish,
-  User,
   Menu,
   X
 } from 'lucide-react';
-import { Link, useLocation } from 'react-router';
+import { Link, useLocation, useNavigate } from 'react-router';
 import { useState } from 'react';
 import { dashboardNavigationItems } from '../../constants/navigation';
+import { useAuth } from '../../context/AuthContext';
+import { getInitials } from '../../lib/format';
 
 export function Sidebar() {
   const location = useLocation();
+  const navigate = useNavigate();
+  const { user, logout } = useAuth();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+  const handleLogout = async () => {
+    await logout();
+    setMobileMenuOpen(false);
+    navigate('/auth');
+  };
 
   return (
     <>
@@ -76,21 +85,24 @@ export function Sidebar() {
         <div className="p-4 border-t-[1.5px] border-[var(--df-border)]">
           <div className="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-[var(--df-light-gray)] transition-colors mb-2 border border-transparent hover:border-[var(--df-border)]">
             <div className="w-10 h-10 bg-[var(--df-navy)] rounded-xl flex items-center justify-center">
-              <User className="w-5 h-5 text-white" />
+              {user?.avatarUrl ? (
+                <img src={user.avatarUrl} alt={user.name} className="w-10 h-10 rounded-xl object-cover" />
+              ) : (
+                <span className="text-sm font-extrabold text-white">{getInitials(user)}</span>
+              )}
             </div>
             <div className="flex-1">
-              <div className="text-sm font-semibold text-[var(--df-black)]">Guest User</div>
-              <div className="text-xs text-[var(--df-muted)]">guest@docfish.ai</div>
+              <div className="text-sm font-semibold text-[var(--df-black)]">{user?.name || 'Docfish User'}</div>
+              <div className="text-xs text-[var(--df-muted)]">{user?.email || 'session@docfish.ai'}</div>
             </div>
           </div>
-          <Link
-            to="/auth"
-            onClick={() => setMobileMenuOpen(false)}
+          <button
+            onClick={handleLogout}
             className="flex items-center gap-3 px-4 py-3 rounded-lg text-gray-500 hover:bg-red-50 hover:text-red-600 transition-all font-medium"
           >
             <LogOut className="w-5 h-5" />
             <span>Logout</span>
-          </Link>
+          </button>
         </div>
       </aside>
     </>

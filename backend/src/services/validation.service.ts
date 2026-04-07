@@ -22,6 +22,11 @@ export interface RawLineItem {
   quantity?: number | string | null;
   unit_price?: number | string | null;
   line_total?: number | string | null;
+  unitPrice?: number | string | null;
+  lineTotal?: number | string | null;
+  total?: number | string | null;
+  amount?: number | string | null;
+  qty?: number | string | null;
 }
 
 export interface RawExtractedInvoiceData {
@@ -71,21 +76,40 @@ class ValidationService {
       return [];
     }
 
-    return items.map((item) => ({
-      description: String(item?.description || '').trim(),
-      quantity:
-        item?.quantity === undefined || item?.quantity === null || item?.quantity === ''
+    return items.map((item) => {
+      const quantityRaw = item?.quantity ?? item?.qty;
+      const unitPriceRaw = item?.unit_price ?? item?.unitPrice;
+      const lineTotalRaw = item?.line_total ?? item?.lineTotal ?? item?.total ?? item?.amount;
+
+      const quantity =
+        quantityRaw === undefined || quantityRaw === null || quantityRaw === ''
           ? null
-          : normalizeNumber(item.quantity),
-      unit_price:
-        item?.unit_price === undefined || item?.unit_price === null || item?.unit_price === ''
+          : normalizeNumber(quantityRaw);
+
+      const unitPrice =
+        unitPriceRaw === undefined || unitPriceRaw === null || unitPriceRaw === ''
           ? null
-          : normalizeNumber(item.unit_price),
-      line_total:
-        item?.line_total === undefined || item?.line_total === null || item?.line_total === ''
+          : normalizeNumber(unitPriceRaw);
+
+      const providedLineTotal =
+        lineTotalRaw === undefined || lineTotalRaw === null || lineTotalRaw === ''
           ? null
-          : normalizeNumber(item.line_total),
-    }));
+          : normalizeNumber(lineTotalRaw);
+
+      const derivedLineTotal =
+        providedLineTotal !== null
+          ? providedLineTotal
+          : quantity !== null && unitPrice !== null
+          ? this.roundToTwo(quantity * unitPrice)
+          : null;
+
+      return {
+        description: String(item?.description || '').trim(),
+        quantity,
+        unit_price: unitPrice,
+        line_total: derivedLineTotal,
+      };
+    });
   }
 
   normalizeExtractedData(data: Partial<RawExtractedInvoiceData>): ExtractedInvoiceData {

@@ -1,13 +1,20 @@
 import { motion } from 'motion/react';
 import { Clock, FileText } from 'lucide-react';
+import { Link } from 'react-router';
 
-const recentUploads = [
-  { id: '1', name: 'INV-2024-001.pdf', time: '5 minutes ago', status: 'completed' },
-  { id: '2', name: 'INV-2024-002.pdf', time: '12 minutes ago', status: 'completed' },
-  { id: '3', name: 'INV-2024-003.pdf', time: '1 hour ago', status: 'completed' },
-];
+interface RecentUploadItem {
+  id: string;
+  name: string;
+  subtitle: string;
+  status: 'done' | 'processing' | 'error' | 'uploaded';
+  path?: string;
+}
 
-export function RecentUploads() {
+interface RecentUploadsProps {
+  uploads: RecentUploadItem[];
+}
+
+export function RecentUploads({ uploads }: RecentUploadsProps) {
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -26,24 +33,47 @@ export function RecentUploads() {
       </div>
 
       <div className="space-y-3">
-        {recentUploads.map((upload, index) => (
-          <motion.div
-            key={upload.id}
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: 0.5 + index * 0.1 }}
-            className="flex items-center gap-3 p-3 rounded-xl hover:bg-gray-50 transition-colors cursor-pointer"
-          >
-            <div className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center flex-shrink-0">
-              <FileText className="w-5 h-5 text-green-600" />
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-gray-900 truncate">{upload.name}</p>
-              <p className="text-xs text-gray-500">{upload.time}</p>
-            </div>
-            <div className="w-2 h-2 bg-green-500 rounded-full flex-shrink-0" />
-          </motion.div>
-        ))}
+        {uploads.length === 0 ? (
+          <div className="rounded-xl bg-gray-50 p-4 text-sm text-gray-500">
+            Your latest uploads will appear here once you start sending documents.
+          </div>
+        ) : (
+          uploads.map((upload, index) => {
+            const statusColor =
+              upload.status === 'done'
+                ? 'bg-green-500'
+                : upload.status === 'error'
+                ? 'bg-red-500'
+                : 'bg-blue-500';
+
+            const content = (
+              <motion.div
+                key={upload.id}
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0.5 + index * 0.1 }}
+                className="flex items-center gap-3 p-3 rounded-xl hover:bg-gray-50 transition-colors cursor-pointer"
+              >
+                <div className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                  <FileText className="w-5 h-5 text-green-600" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-gray-900 truncate">{upload.name}</p>
+                  <p className="text-xs text-gray-500">{upload.subtitle}</p>
+                </div>
+                <div className={`w-2 h-2 rounded-full flex-shrink-0 ${statusColor}`} />
+              </motion.div>
+            );
+
+            return upload.path ? (
+              <Link key={upload.id} to={upload.path}>
+                {content}
+              </Link>
+            ) : (
+              <div key={upload.id}>{content}</div>
+            );
+          })
+        )}
       </div>
     </motion.div>
   );

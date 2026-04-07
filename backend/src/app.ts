@@ -17,13 +17,35 @@ const app = express();
 
 connectDB();
 
+const corsOrigins = process.env.CORS_ORIGIN
+  ? process.env.CORS_ORIGIN.split(',').map((origin) => origin.trim()).filter(Boolean)
+  : [];
+
+const defaultDevOrigins = ['http://localhost:3000', 'http://localhost:5173'];
+
+const frameAncestors = Array.from(
+  new Set([
+    "'self'",
+    ...corsOrigins.filter((origin) => origin !== '*'),
+    ...(process.env.NODE_ENV === 'production' ? [] : defaultDevOrigins),
+  ])
+);
+
 app.use(
   cors({
-    origin: process.env.CORS_ORIGIN ? process.env.CORS_ORIGIN.split(',') : '*',
+    origin: corsOrigins.length ? corsOrigins : '*',
     credentials: true,
   })
 );
-app.use(helmet());
+app.use(
+  helmet({
+    contentSecurityPolicy: {
+      directives: {
+        frameAncestors,
+      },
+    },
+  })
+);
 app.use(morgan(process.env.NODE_ENV === 'production' ? 'combined' : 'dev'));
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));

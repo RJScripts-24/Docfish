@@ -1,46 +1,19 @@
+import { useEffect, useState } from 'react';
 import { Sidebar } from '../components/layout/Sidebar';
 import { DashboardHeader } from '../components/layout/DashboardHeader';
-import { VersionHistory, PromptVersion } from '../components/features/settings/VersionHistory';
+import { VersionHistory } from '../components/features/settings/VersionHistory';
 import { PromptEditor } from '../components/features/settings/PromptEditor';
 import { TestPromptPanel } from '../components/features/settings/TestPromptPanel';
-import { motion } from 'motion/react';
-import { useState } from 'react';
 import { Plus, Beaker } from 'lucide-react';
-
-// Mock prompt versions
-const mockVersions: PromptVersion[] = [
-  {
-    id: 'v1.3',
-    name: 'v1.3 - Enhanced vendor extraction',
-    description: 'Improved vendor name detection with better handling of complex business names and address parsing.',
-    timestamp: 'Updated 2 days ago',
-    status: 'active',
-    tags: ['stable', 'production'],
-  },
-  {
-    id: 'v1.2',
-    name: 'v1.2 - Line item improvements',
-    description: 'Better extraction of line items with quantity, unit price, and total calculations.',
-    timestamp: 'Updated 1 week ago',
-    status: 'draft',
-    tags: ['experimental'],
-  },
-  {
-    id: 'v1.1',
-    name: 'v1.1 - Tax calculation fix',
-    description: 'Fixed issues with tax amount extraction and percentage calculation.',
-    timestamp: 'Updated 2 weeks ago',
-    status: 'draft',
-  },
-  {
-    id: 'v1.0',
-    name: 'v1.0 - Initial release',
-    description: 'First production version with basic invoice extraction capabilities.',
-    timestamp: 'Updated 1 month ago',
-    status: 'draft',
-    tags: ['baseline'],
-  },
-];
+import {
+  activatePrompt,
+  createPrompt,
+  deletePrompt,
+  listPrompts,
+  testPrompt,
+  updatePrompt,
+} from '../lib/api';
+import { PromptVersion } from '../lib/types';
 
 const defaultPromptContent = `You are an AI assistant specialized in extracting structured data from invoices and documents.
 
@@ -79,115 +52,175 @@ Extract the following information from the document:
 - Include confidence scores (0-1) for each extracted field
 - If a field is not found, set value to null
 - Ensure line items sum matches total_amount
-- Flag any inconsistencies in validation_warnings
-
-**Output Format:**
-{
-  "vendor_name": { "value": "...", "confidence": 0.95 },
-  "invoice_number": { "value": "...", "confidence": 0.98 },
-  ...
-}`;
+- Flag any inconsistencies in validation_warnings`;
 
 export default function SettingsPage() {
-  const [versions, setVersions] = useState<PromptVersion[]>(mockVersions);
-  const [selectedVersionId, setSelectedVersionId] = useState<string>('v1.3');
+  const [versions, setVersions] = useState<PromptVersion[]>([]);
+  const [selectedVersionId, setSelectedVersionId] = useState('');
   const [showTestPanel, setShowTestPanel] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [infoMessage, setInfoMessage] = useState<string | null>(null);
 
-  // Find selected version
-  const selectedVersion = versions.find((v) => v.id === selectedVersionId) || versions[0];
-
-  // Editor state
-  const [versionName, setVersionName] = useState(selectedVersion.name);
-  const [description, setDescription] = useState(selectedVersion.description);
+  const [versionName, setVersionName] = useState('');
+  const [description, setDescription] = useState('');
   const [promptContent, setPromptContent] = useState(defaultPromptContent);
-  const [status, setStatus] = useState<'active' | 'draft'>(selectedVersion.status);
+  const [status, setStatus] = useState<'active' | 'draft'>('draft');
 
-  const handleSelectVersion = (id: string) => {
-    const version = versions.find((v) => v.id === id);
-    if (version) {
-      setSelectedVersionId(id);
-      setVersionName(version.name);
-      setDescription(version.description);
-      setStatus(version.status);
-      // In a real app, would load prompt content from API
-    }
-  };
-
-  const handleActivateVersion = (id: string) => {
-    if (confirm('Are you sure you want to activate this version?')) {
-      setVersions((prev) =>
-        prev.map((v) => ({
-          ...v,
-          status: v.id === id ? 'active' : 'draft',
-        }))
-      );
-      alert('Version activated successfully!');
-    }
-  };
-
-  const handleDeleteVersion = (id: string) => {
-    const version = versions.find((v) => v.id === id);
-    if (version?.status === 'active') {
-      alert('Cannot delete active version. Please activate another version first.');
+  const applyVersion = (version: PromptVersion | null) => {
+    if (!version) {
+      setSelectedVersionId('');
+      setVersionName('');
+      setDescription('');
+      setPromptContent(defaultPromptContent);
+      setStatus('draft');
       return;
     }
 
-    if (confirm('Are you sure you want to delete this version?')) {
-      setVersions((prev) => prev.filter((v) => v.id !== id));
-      if (selectedVersionId === id) {
-        setSelectedVersionId(versions[0].id);
+    setSelectedVersionId(version.id);
+    setVersionName(version.name);
+    setDescription(version.description);
+    setPromptContent(version.content || defaultPromptContent);
+    setStatus(version.status);
+  };
+
+  const loadVersions = async (preferredId?: string) => {
+    const response = await listPrompts();
+    setVersions(response);
+
+    const preferred =
+      response.find((item) => item.id === preferredId) ||
+      response.find((item) => item.status === 'active') ||
+      response[0] ||
+      null;
+
+    applyVersion(preferred);
+  };
+
+  useEffect(() => {
+    let isActive = true;
+
+    async function fetchPrompts() {
+      try {
+        setIsLoading(true);
+        setErrorMessage(null);
+        const response = await listPrompts();
+
+        if (!isActive) {
+          return;
+        }
+
+        setVersions(response);
+        applyVersion(response.find((item) => item.status === 'active') || response[0] || null);
+      } catch (error) {
+        if (isActive) {
+          setErrorMessage(error instanceof Error ? error.message : 'Failed to load prompt versions.');
+        }
+      } finally {
+        if (isActive) {
+          setIsLoading(false);
+        }
       }
-      alert('Version deleted successfully!');
+    }
+
+    void fetchPrompts();
+
+    return () => {
+      isActive = false;
+    };
+  }, []);
+
+  const handleSelectVersion = (id: string) => {
+    const version = versions.find((item) => item.id === id) || null;
+    applyVersion(version);
+    setErrorMessage(null);
+    setInfoMessage(null);
+  };
+
+  const handleActivateVersion = async (id: string) => {
+    try {
+      setErrorMessage(null);
+      const activated = await activatePrompt(id);
+      await loadVersions(activated.id);
+      setInfoMessage('Prompt version activated successfully.');
+    } catch (error) {
+      setErrorMessage(error instanceof Error ? error.message : 'Failed to activate prompt version.');
     }
   };
 
-  const handleSaveNewVersion = () => {
-    const newId = `v${versions.length + 1}.0`;
-    const newVersion: PromptVersion = {
-      id: newId,
-      name: versionName || `v${versions.length + 1}.0 - New version`,
-      description: description || 'New prompt version',
-      timestamp: 'Just now',
-      status: 'draft',
-    };
-
-    setVersions((prev) => [newVersion, ...prev]);
-    setSelectedVersionId(newId);
-    alert('New version created successfully!');
+  const handleDeleteVersion = async (id: string) => {
+    try {
+      setErrorMessage(null);
+      await deletePrompt(id);
+      await loadVersions();
+      setInfoMessage('Prompt version deleted successfully.');
+    } catch (error) {
+      setErrorMessage(error instanceof Error ? error.message : 'Failed to delete prompt version.');
+    }
   };
 
-  const handleUpdateVersion = () => {
-    setVersions((prev) =>
-      prev.map((v) =>
-        v.id === selectedVersionId
-          ? { ...v, name: versionName, description, status }
-          : v
-      )
-    );
-    alert('Version updated successfully!');
+  const handleSaveNewVersion = async () => {
+    try {
+      setErrorMessage(null);
+      const created = await createPrompt({
+        name: versionName || 'Untitled prompt version',
+        description,
+        content: promptContent,
+      });
+
+      if (status === 'active') {
+        await activatePrompt(created.id);
+      }
+
+      await loadVersions(created.id);
+      setInfoMessage('New prompt version created successfully.');
+    } catch (error) {
+      setErrorMessage(error instanceof Error ? error.message : 'Failed to create prompt version.');
+    }
   };
 
-  const handleSetActive = () => {
-    setVersions((prev) =>
-      prev.map((v) => ({
-        ...v,
-        status: v.id === selectedVersionId ? 'active' : 'draft',
-      }))
-    );
-    setStatus('active');
-    alert('Version set as active!');
+  const handleUpdateVersion = async () => {
+    if (!selectedVersionId) {
+      await handleSaveNewVersion();
+      return;
+    }
+
+    try {
+      setErrorMessage(null);
+      await updatePrompt(selectedVersionId, {
+        name: versionName,
+        description,
+        content: promptContent,
+        status,
+      });
+      await loadVersions(selectedVersionId);
+      setInfoMessage('Prompt version updated successfully.');
+    } catch (error) {
+      setErrorMessage(error instanceof Error ? error.message : 'Failed to update prompt version.');
+    }
+  };
+
+  const handleSetActive = async () => {
+    if (!selectedVersionId) {
+      setErrorMessage('Create or select a prompt version before activating it.');
+      return;
+    }
+
+    await handleActivateVersion(selectedVersionId);
   };
 
   const handleCreateNew = () => {
-    setVersionName('');
-    setDescription('');
-    setPromptContent(defaultPromptContent);
-    setStatus('draft');
-    setSelectedVersionId('');
+    setErrorMessage(null);
+    setInfoMessage(null);
+    applyVersion(null);
   };
 
-  const handleRunTest = (sampleText: string) => {
-    console.log('Running test with:', sampleText);
+  const handleRunTest = async (sampleText: string) => {
+    if (!selectedVersionId) {
+      throw new Error('Save a prompt version before running a test.');
+    }
+
+    return testPrompt(selectedVersionId, sampleText);
   };
 
   return (
@@ -197,16 +230,11 @@ export default function SettingsPage() {
       <div className="flex-1 lg:ml-64 flex flex-col">
         <DashboardHeader />
 
-        {/* Page Header */}
         <div className="p-4 sm:p-6 lg:p-8 xl:p-10 border-b border-gray-200 bg-white">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 max-w-[1920px] mx-auto">
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">
-                Prompt Management
-              </h1>
-              <p className="text-gray-600 mt-1">
-                Configure and version AI extraction prompts
-              </p>
+              <h1 className="text-3xl font-bold text-gray-900">Prompt Management</h1>
+              <p className="text-gray-600 mt-1">Configure and version AI extraction prompts</p>
             </div>
             <div className="flex gap-4">
               <button
@@ -225,11 +253,21 @@ export default function SettingsPage() {
               </button>
             </div>
           </div>
+
+          {errorMessage ? (
+            <div className="mt-4 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+              {errorMessage}
+            </div>
+          ) : null}
+
+          {infoMessage ? (
+            <div className="mt-4 rounded-2xl border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-700">
+              {infoMessage}
+            </div>
+          ) : null}
         </div>
 
-        {/* Split Layout */}
         <div className="flex-1 flex overflow-hidden">
-          {/* Left Panel - Version History */}
           <div className="w-1/3">
             <VersionHistory
               versions={versions}
@@ -240,26 +278,28 @@ export default function SettingsPage() {
             />
           </div>
 
-          {/* Right Panel - Prompt Editor */}
           <div className="flex-1">
-            <PromptEditor
-              versionName={versionName}
-              description={description}
-              promptContent={promptContent}
-              status={status}
-              onVersionNameChange={setVersionName}
-              onDescriptionChange={setDescription}
-              onPromptContentChange={setPromptContent}
-              onStatusChange={setStatus}
-              onSaveNewVersion={handleSaveNewVersion}
-              onUpdateVersion={handleUpdateVersion}
-              onSetActive={handleSetActive}
-            />
+            {isLoading ? (
+              <div className="h-full flex items-center justify-center text-sm text-gray-500">Loading prompt versions...</div>
+            ) : (
+              <PromptEditor
+                versionName={versionName}
+                description={description}
+                promptContent={promptContent}
+                status={status}
+                onVersionNameChange={setVersionName}
+                onDescriptionChange={setDescription}
+                onPromptContentChange={setPromptContent}
+                onStatusChange={setStatus}
+                onSaveNewVersion={handleSaveNewVersion}
+                onUpdateVersion={handleUpdateVersion}
+                onSetActive={handleSetActive}
+              />
+            )}
           </div>
         </div>
       </div>
 
-      {/* Test Prompt Panel */}
       <TestPromptPanel
         isOpen={showTestPanel}
         onClose={() => setShowTestPanel(false)}

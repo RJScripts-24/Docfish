@@ -1,14 +1,6 @@
 import { motion } from 'motion/react';
-import { Check, Clock, Edit2, Trash2, Tag } from 'lucide-react';
-
-export interface PromptVersion {
-  id: string;
-  name: string;
-  description: string;
-  timestamp: string;
-  status: 'active' | 'draft';
-  tags?: string[];
-}
+import { Check, Clock, Trash2, Tag } from 'lucide-react';
+import { PromptVersion } from '../../../lib/types';
 
 interface VersionHistoryProps {
   versions: PromptVersion[];

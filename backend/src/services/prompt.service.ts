@@ -72,16 +72,28 @@ class PromptService {
     }
 
     if (!prompt) {
-      prompt = await Prompt.create({
-        name,
-        version: 1,
-        systemPrompt:
-          'You extract invoice data into structured JSON with strong field fidelity.',
-        userPrompt:
-          'Extract vendor_name, invoice_number, invoice_date, currency, total_amount, tax_amount, and line_items from the provided invoice text. Return JSON only.',
-        description: 'Default invoice extraction prompt',
-        isActive: true,
-      });
+      try {
+        prompt = await Prompt.create({
+          name,
+          version: 1,
+          systemPrompt:
+            'You extract invoice data into structured JSON with strong field fidelity.',
+          userPrompt:
+            'Extract vendor_name, invoice_number, invoice_date, currency, total_amount, tax_amount, and line_items from the provided invoice text. Return JSON only.',
+          description: 'Default invoice extraction prompt',
+          isActive: true,
+        });
+      } catch (error: any) {
+        if (error?.code !== 11000) {
+          throw error;
+        }
+
+        prompt = await Prompt.findOne({ name }).sort({ version: -1 });
+
+        if (!prompt) {
+          throw error;
+        }
+      }
     }
 
     return prompt;

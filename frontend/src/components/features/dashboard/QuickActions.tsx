@@ -29,7 +29,7 @@ export function QuickActions() {
       bgColor: 'bg-[#8AE04A]/20',
       textColor: 'text-[var(--df-navy)]',
       hoverColor: 'hover:bg-[#8AE04A]/30',
-      path: '/documents?status=error',
+      path: '/documents?status=failed',
     },
   ];
 

@@ -19,6 +19,16 @@ import {
 } from '../utils/apiContractMappers';
 
 const sendApiError = (res: Response, status: number, error: string, message: string) => {
+  if (status >= 500) {
+    console.error('[API] Request failed', {
+      method: res.req?.method,
+      path: res.req?.originalUrl,
+      status,
+      error,
+      message,
+    });
+  }
+
   res.status(status).json({ error, message });
 };
 
@@ -39,6 +49,30 @@ const parseBoolean = (value: unknown, fallback: boolean) => {
   }
 
   return fallback;
+};
+
+const parseOAuthState = (value: unknown): { redirectUri?: string; nonce?: string } | null => {
+  if (typeof value !== 'string' || !value) {
+    return null;
+  }
+
+  try {
+    const decoded = Buffer.from(value, 'base64url').toString('utf8');
+    const parsed = JSON.parse(decoded) as { redirectUri?: string; nonce?: string };
+    return parsed;
+  } catch (_error) {
+    return null;
+  }
+};
+
+const buildOAuthRedirectUrl = (redirectUri: string, params: Record<string, string>) => {
+  const url = new URL(redirectUri);
+
+  Object.entries(params).forEach(([key, value]) => {
+    url.searchParams.set(key, value);
+  });
+
+  return url.toString();
 };
 
 const collectUploadedFiles = (req: Request): Express.Multer.File[] => {
@@ -73,9 +107,18 @@ const canAccessDocument = (req: Request, uploadedBy: any) => {
 const queueReprocess = async (documentId: string) => {
   try {
     await Document.findByIdAndUpdate(documentId, { $inc: { retryCount: 1 } });
-    void extractionService.reprocessDocument(documentId).catch(() => null);
-  } catch (_error) {
-    // Best effort queue trigger; failures are surfaced in polling endpoints.
+    void extractionService.reprocessDocument(documentId).catch((error: unknown) => {
+      console.error('[Upload] Reprocess queue execution failed', {
+        documentId,
+        error: error instanceof Error ? { message: error.message, stack: error.stack } : String(error),
+      });
+      return null;
+    });
+  } catch (error) {
+    console.error('[Upload] Failed to queue document reprocess', {
+      documentId,
+      error: error instanceof Error ? { message: error.message, stack: error.stack } : String(error),
+    });
   }
 };
 
@@ -95,6 +138,51 @@ const parseNumberOrNull = (value: unknown): number | null => {
 
   const parsed = Number(value);
   return Number.isFinite(parsed) ? parsed : null;
+};
+
+const matchesDateFilter = (value: string, dateFilter: string) => {
+  if (dateFilter === 'all') {
+    return true;
+  }
+
+  const targetDate = new Date(value);
+
+  if (Number.isNaN(targetDate.getTime())) {
+    return false;
+  }
+
+  const now = new Date();
+
+  if (dateFilter === 'today') {
+    return (
+      targetDate.getDate() === now.getDate() &&
+      targetDate.getMonth() === now.getMonth() &&
+      targetDate.getFullYear() === now.getFullYear()
+    );
+  }
+
+  if (dateFilter === 'week') {
+    const weekStart = new Date(now);
+    weekStart.setDate(now.getDate() - 7);
+    weekStart.setHours(0, 0, 0, 0);
+    return targetDate >= weekStart;
+  }
+
+  if (dateFilter === 'month') {
+    const monthStart = new Date(now);
+    monthStart.setMonth(now.getMonth() - 1);
+    monthStart.setHours(0, 0, 0, 0);
+    return targetDate >= monthStart;
+  }
+
+  if (dateFilter === 'quarter') {
+    const quarterStart = new Date(now);
+    quarterStart.setMonth(now.getMonth() - 3);
+    quarterStart.setHours(0, 0, 0, 0);
+    return targetDate >= quarterStart;
+  }
+
+  return true;
 };
 
 const toChartLabelHour = (date: Date) => `${String(date.getHours()).padStart(2, '0')}:00`;
@@ -171,6 +259,12 @@ export const authGoogle = async (req: Request, res: Response): Promise<void> => 
 };
 
 export const authGoogleCallback = async (req: Request, res: Response): Promise<void> => {
+  const oauthState = parseOAuthState(req.query.state);
+  const redirectUri =
+    typeof oauthState?.redirectUri === 'string' && oauthState.redirectUri.trim()
+      ? oauthState.redirectUri
+      : '';
+
   try {
     const code = typeof req.query.code === 'string' ? req.query.code : '';
 
@@ -235,8 +329,29 @@ export const authGoogleCallback = async (req: Request, res: Response): Promise<v
       avatarUrl,
     });
 
+    if (redirectUri) {
+      res.redirect(
+        302,
+        buildOAuthRedirectUrl(redirectUri, {
+          token: authResponse.token,
+          user: JSON.stringify(authResponse.user),
+        })
+      );
+      return;
+    }
+
     res.status(200).json(authResponse);
   } catch (error: any) {
+    if (redirectUri) {
+      res.redirect(
+        302,
+        buildOAuthRedirectUrl(redirectUri, {
+          error: error.message || 'Google OAuth callback failed',
+        })
+      );
+      return;
+    }
+
     sendApiError(res, 500, 'AUTH_ERROR', error.message || 'Google OAuth callback failed');
   }
 };
@@ -274,6 +389,7 @@ export const listDocumentsV1 = async (req: Request, res: Response): Promise<void
     const requestedLimit = Number(req.query.limit || 10);
     const limit = [10, 25, 50, 100].includes(requestedLimit) ? requestedLimit : 10;
     const status = typeof req.query.status === 'string' ? req.query.status : 'all';
+    const dateFilter = typeof req.query.dateFilter === 'string' ? req.query.dateFilter : 'all';
     const sort = typeof req.query.sort === 'string' ? req.query.sort : 'date-desc';
     const search = typeof req.query.search === 'string' ? req.query.search.trim() : '';
 
@@ -317,6 +433,10 @@ export const listDocumentsV1 = async (req: Request, res: Response): Promise<void
       transformed = transformed.filter((item) => item.status === status);
     }
 
+    if (dateFilter !== 'all') {
+      transformed = transformed.filter((item) => matchesDateFilter(item.invoiceDate, dateFilter));
+    }
+
     const totalCount = transformed.length;
     const start = (page - 1) * limit;
     const data = transformed.slice(start, start + limit);
@@ -358,8 +478,24 @@ export const uploadDocumentsV1 = async (req: Request, res: Response): Promise<vo
               mimeType: document.mimeType,
               userId: req.user?.userId,
             })
-            .catch(() => null);
+            .catch((error: unknown) => {
+              console.error('[Upload] Async document processing failed', {
+                documentId: String(document._id),
+                filename: document.originalFilename,
+                error: error instanceof Error ? { message: error.message, stack: error.stack } : String(error),
+              });
+              return null;
+            });
         }
+
+        console.info('[Upload] Accepted document upload', {
+          documentId: String(document._id),
+          filename: document.originalFilename,
+          mimeType: document.mimeType,
+          sizeBytes: document.fileSizeBytes,
+          autoProcess,
+          uploadedBy: req.user?.userId || null,
+        });
 
         return toUploadedFile(document);
       })
@@ -743,7 +879,13 @@ export const listErrorsV1 = async (req: Request, res: Response): Promise<void> =
     const search = typeof req.query.search === 'string' ? req.query.search.toLowerCase() : '';
     const errorTypeFilter = typeof req.query.errorType === 'string' ? req.query.errorType : 'all';
     const statusFilter = typeof req.query.status === 'string' ? req.query.status : 'all';
-    const dateFilter = typeof req.query.dateFilter === 'string' ? req.query.dateFilter : 'all';
+    const requestedDateFilter = typeof req.query.dateFilter === 'string' ? req.query.dateFilter : 'all';
+    const dateFilter =
+      requestedDateFilter === 'week'
+        ? 'this-week'
+        : requestedDateFilter === 'month'
+        ? 'this-month'
+        : requestedDateFilter;
 
     const docs = await Document.find(buildScope(req))
       .select('originalFilename extractedData status errorMessage updatedAt validationErrors retryCount')

@@ -1,76 +1,26 @@
 import { motion } from 'motion/react';
 import { ExternalLink } from 'lucide-react';
+import { Link } from 'react-router';
+import { formatCurrency, formatDate } from '../../../lib/format';
+import { InvoiceDocument } from '../../../lib/types';
 
-interface Document {
-  id: string;
-  name: string;
-  vendor: string;
-  date: string;
-  amount: string;
-  status: 'success' | 'review' | 'error';
-  confidence: number;
+interface RecentDocumentsProps {
+  documents: InvoiceDocument[];
+  isLoading?: boolean;
 }
 
-const mockDocuments: Document[] = [
-  {
-    id: '1',
-    name: 'INV-2024-001.pdf',
-    vendor: 'Acme Corp',
-    date: '2024-04-05',
-    amount: '$2,450.00',
-    status: 'success',
-    confidence: 98,
-  },
-  {
-    id: '2',
-    name: 'INV-2024-002.pdf',
-    vendor: 'TechSupply Inc',
-    date: '2024-04-05',
-    amount: '$1,230.50',
-    status: 'review',
-    confidence: 87,
-  },
-  {
-    id: '3',
-    name: 'INV-2024-003.pdf',
-    vendor: 'Global Services',
-    date: '2024-04-04',
-    amount: '$5,890.00',
-    status: 'success',
-    confidence: 95,
-  },
-  {
-    id: '4',
-    name: 'INV-2024-004.pdf',
-    vendor: 'Cloud Solutions',
-    date: '2024-04-04',
-    amount: '$890.00',
-    status: 'error',
-    confidence: 62,
-  },
-  {
-    id: '5',
-    name: 'INV-2024-005.pdf',
-    vendor: 'Design Studio',
-    date: '2024-04-03',
-    amount: '$3,200.00',
-    status: 'success',
-    confidence: 99,
-  },
-];
-
-export function RecentDocuments() {
-  const getStatusBadge = (status: Document['status']) => {
+export function RecentDocuments({ documents, isLoading = false }: RecentDocumentsProps) {
+  const getStatusBadge = (status: InvoiceDocument['status']) => {
     const styles = {
       success: 'bg-green-100 text-green-700',
       review: 'bg-yellow-100 text-yellow-700',
-      error: 'bg-red-100 text-red-700',
+      failed: 'bg-red-100 text-red-700',
     };
 
     const labels = {
       success: 'Success',
       review: 'Needs Review',
-      error: 'Error',
+      failed: 'Failed',
     };
 
     return (
@@ -99,10 +49,13 @@ export function RecentDocuments() {
           <h3 className="text-xl font-bold text-gray-900">Recent Documents</h3>
           <p className="text-sm text-gray-500 mt-1">Latest processed invoices</p>
         </div>
-        <button className="text-gray-900 border-b border-gray-900 hover:text-gray-600 font-medium text-sm flex items-center gap-1 pb-0.5 transition-colors">
+        <Link
+          to="/documents"
+          className="text-gray-900 border-b border-gray-900 hover:text-gray-600 font-medium text-sm flex items-center gap-1 pb-0.5 transition-colors"
+        >
           View All
           <ExternalLink className="w-4 h-4" />
-        </button>
+        </Link>
       </div>
 
       {/* Table */}
@@ -119,27 +72,41 @@ export function RecentDocuments() {
             </tr>
           </thead>
           <tbody>
-            {mockDocuments.map((doc) => (
-              <tr
-                key={doc.id}
-                className="border-b border-gray-100 hover:bg-gray-50 transition-colors cursor-pointer"
-              >
-                <td className="py-4 px-4">
-                  <div className="flex items-center gap-2">
-                    <div className="text-sm font-medium text-gray-900">{doc.name}</div>
-                  </div>
-                </td>
-                <td className="py-4 px-4 text-sm text-gray-600">{doc.vendor}</td>
-                <td className="py-4 px-4 text-sm text-gray-600">{doc.date}</td>
-                <td className="py-4 px-4 text-sm font-medium text-gray-900">{doc.amount}</td>
-                <td className="py-4 px-4">{getStatusBadge(doc.status)}</td>
-                <td className="py-4 px-4">
-                  <span className={`text-sm font-semibold ${getConfidenceColor(doc.confidence)}`}>
-                    {doc.confidence}%
-                  </span>
+            {isLoading ? (
+              <tr>
+                <td colSpan={6} className="py-10 px-4 text-center text-sm text-gray-500">
+                  Loading recent documents...
                 </td>
               </tr>
-            ))}
+            ) : documents.length === 0 ? (
+              <tr>
+                <td colSpan={6} className="py-10 px-4 text-center text-sm text-gray-500">
+                  No processed documents yet.
+                </td>
+              </tr>
+            ) : (
+              documents.map((doc) => (
+                <tr
+                  key={doc.id}
+                  className="border-b border-gray-100 hover:bg-gray-50 transition-colors cursor-pointer"
+                >
+                  <td className="py-4 px-4">
+                    <Link to={`/documents/${doc.id}`} className="flex items-center gap-2">
+                      <div className="text-sm font-medium text-gray-900">{doc.name}</div>
+                    </Link>
+                  </td>
+                  <td className="py-4 px-4 text-sm text-gray-600">{doc.vendor}</td>
+                  <td className="py-4 px-4 text-sm text-gray-600">{formatDate(doc.invoiceDate)}</td>
+                  <td className="py-4 px-4 text-sm font-medium text-gray-900">{formatCurrency(doc.amount)}</td>
+                  <td className="py-4 px-4">{getStatusBadge(doc.status)}</td>
+                  <td className="py-4 px-4">
+                    <span className={`text-sm font-semibold ${getConfidenceColor(doc.confidence)}`}>
+                      {doc.confidence}%
+                    </span>
+                  </td>
+                </tr>
+              ))
+            )}
           </tbody>
         </table>
       </div>
