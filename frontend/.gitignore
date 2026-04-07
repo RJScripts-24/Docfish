@@ -1,0 +1,96 @@
+# Dependencies
+node_modules/
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
+# Build outputs
+dist/
+build/
+.next/
+
+# IDE and Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+*.sublime-project
+*.sublime-workspace
+.vim/
+vscode-settings.json
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+pnpm-debug.log*
+
+# Runtime data
+pids
+*.pid
+*.seed
+*.pid.lock
+
+# Cache and temporary files
+.cache/
+.eslintcache
+.stylelintcache
+.prettierignore
+.prettierrc
+*.tmp
+*.temp
+
+# Testing and coverage
+coverage/
+.nyc_output/
+lcov.info
+
+# OS files
+Thumbs.db
+.DS_Store
+.AppleDouble
+.LSOverride
+*.swp
+*.swo
+*~
+.directory
+
+# Jetbrains IDEs
+.idea/
+.idea_modules/
+*.iml
+*.iws
+*.ipr
+*.swp
+
+# Python (if applicable)
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Node-specific
+npm-debug.log*
+lerna-debug.log*
+
+# Misc
+.tern-port
+.awcache/
+
+# Azure
+.env.vault
+
+# Extra editor configs
+*.bak
+*.orig
