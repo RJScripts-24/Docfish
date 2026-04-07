@@ -64,20 +64,24 @@ export function ErrorSummaryCards({
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: index * 0.1 }}
-            className="bg-white rounded-2xl p-6 border border-gray-200 shadow-sm hover:shadow-md transition-shadow"
+            className="bg-white rounded-2xl p-5 border-[1.5px] border-[var(--df-border)] shadow-[0_2px_16px_rgba(0,0,0,0.04)] hover:shadow-[0_4px_24px_rgba(0,0,0,0.06)] transition-all group"
           >
-            <div className="flex items-start justify-between mb-4">
-              <div className={`w-10 h-10 rounded-lg ${card.bgColor} flex items-center justify-center`}>
-                <Icon className={`w-5 h-5 ${card.title === 'Success Rate' ? 'text-gray-900' : 'text-white'}`} />
+            <div className="flex items-center justify-between mb-4">
+              <div className={`w-10 h-10 rounded-xl ${card.bgColor} flex items-center justify-center shadow-sm transition-transform group-hover:scale-110`}>
+                <Icon className={`w-5 h-5 ${card.title === 'Success Rate' ? 'text-[var(--df-black)]' : 'text-white'}`} />
               </div>
+              {card.subtitle && (
+                <span className="text-[10px] font-extrabold text-[var(--df-muted)] uppercase tracking-wider bg-[var(--df-light-gray)] px-2 py-1 rounded-lg border border-[var(--df-border)]">
+                  {card.subtitle}
+                </span>
+              )}
             </div>
-            <p className="text-sm text-gray-600 mb-1">{card.title}</p>
-            <p className={`text-3xl font-bold ${card.textColor} mb-1`}>
-              {card.value}
-            </p>
-            {card.subtitle && (
-              <p className="text-xs text-gray-500">{card.subtitle}</p>
-            )}
+            <div>
+              <p className="text-xs font-bold text-[var(--df-muted)] uppercase tracking-widest mb-1">{card.title}</p>
+              <p className={`text-3xl font-extrabold ${card.textColor === 'text-[var(--df-navy)]' ? 'text-[var(--df-black)]' : card.textColor} tracking-tighter`}>
+                {card.value}
+              </p>
+            </div>
           </motion.div>
         );
       })}

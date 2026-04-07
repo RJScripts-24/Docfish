@@ -36,11 +36,11 @@ export function Sidebar() {
       )}
 
       {/* Sidebar */}
-      <aside className={`fixed left-0 top-0 h-screen w-64 bg-white border-r border-gray-200 flex flex-col z-40 transition-transform duration-300 ${
+      <aside className={`fixed left-0 top-0 h-screen w-64 bg-white border-r-[1.5px] border-[var(--df-border)] flex flex-col z-40 transition-transform duration-300 ${
         mobileMenuOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
       }`}>
         {/* Logo */}
-        <div className="p-6 border-b border-gray-200">
+        <div className="p-6 border-b-[1.5px] border-[var(--df-border)]">
           <Link to="/" className="flex items-center gap-3" onClick={() => setMobileMenuOpen(false)}>
             <div className="w-10 h-10 bg-[var(--df-navy)] rounded-xl flex items-center justify-center">
               <Fish className="w-6 h-6 text-white" />
@@ -60,10 +60,10 @@ export function Sidebar() {
                 key={item.path}
                 to={item.path}
                 onClick={() => setMobileMenuOpen(false)}
-                className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-all ${
+                className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${
                   isActive
-                    ? 'bg-[var(--df-navy)] text-white font-semibold'
-                    : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900'
+                    ? 'bg-[var(--df-navy)] text-white font-semibold shadow-sm'
+                    : 'text-[var(--df-muted)] hover:bg-[var(--df-light-gray)] hover:text-[var(--df-black)]'
                 }`}
               >
                 <Icon className="w-5 h-5" />
@@ -73,15 +73,14 @@ export function Sidebar() {
           })}
         </nav>
 
-        {/* User Profile */}
-        <div className="p-4 border-t border-gray-200">
-          <div className="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-gray-50 transition-colors mb-2 border border-transparent hover:border-gray-200">
-            <div className="w-10 h-10 bg-[var(--df-navy)] rounded-full flex items-center justify-center">
+        <div className="p-4 border-t-[1.5px] border-[var(--df-border)]">
+          <div className="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-[var(--df-light-gray)] transition-colors mb-2 border border-transparent hover:border-[var(--df-border)]">
+            <div className="w-10 h-10 bg-[var(--df-navy)] rounded-xl flex items-center justify-center">
               <User className="w-5 h-5 text-white" />
             </div>
             <div className="flex-1">
-              <div className="text-sm font-medium text-gray-900">Guest User</div>
-              <div className="text-xs text-gray-500">guest@docfish.ai</div>
+              <div className="text-sm font-semibold text-[var(--df-black)]">Guest User</div>
+              <div className="text-xs text-[var(--df-muted)]">guest@docfish.ai</div>
             </div>
           </div>
           <Link

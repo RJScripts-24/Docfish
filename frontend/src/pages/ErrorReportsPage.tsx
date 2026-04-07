@@ -195,8 +195,8 @@ export default function ErrorReportsPage() {
           {/* Page Header */}
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">Error Reports</h1>
-              <p className="text-gray-600 mt-1">
+              <h1 className="text-3xl font-extrabold text-[var(--df-black)] tracking-tight">Error Reports</h1>
+              <p className="text-sm font-medium text-[var(--df-muted)] mt-1">
                 Monitor failed documents and resolve extraction issues
               </p>
             </div>
@@ -236,8 +236,8 @@ export default function ErrorReportsPage() {
                 animate={{ opacity: 1 }}
                 className="flex items-center justify-between"
               >
-                <p className="text-sm text-gray-600">
-                  Showing <span className="font-semibold text-gray-900">{filteredDocuments.length}</span> error{filteredDocuments.length !== 1 ? 's' : ''}
+                <p className="text-xs font-bold text-[var(--df-muted)] uppercase tracking-widest">
+                  Showing <span className="text-[var(--df-black)]">{filteredDocuments.length}</span> error{filteredDocuments.length !== 1 ? 's' : ''}
                 </p>
               </motion.div>
 

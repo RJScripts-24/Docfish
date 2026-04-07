@@ -206,22 +206,22 @@ export default function DocumentsPage() {
           {/* Page Header */}
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6 sm:mb-8">
             <div>
-              <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Invoices</h1>
-              <p className="text-sm sm:text-base text-gray-600 mt-1">
+              <h1 className="text-3xl font-extrabold text-[var(--df-black)] tracking-tight">Invoices</h1>
+              <p className="text-sm font-medium text-[var(--df-muted)] mt-1">
                 Manage and track all your processed documents
               </p>
             </div>
             <div className="flex gap-3">
               <Link to="/upload" className="flex-1 sm:flex-initial">
-                <button className="w-full sm:w-auto px-4 sm:px-5 py-2.5 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 transition-all font-medium text-gray-700 flex items-center justify-center gap-2 text-sm sm:text-base">
-                  <FileUp className="w-5 h-5" />
+                <button className="w-full sm:w-auto px-6 py-2.5 bg-white border-[1.5px] border-[var(--df-black)] rounded-full hover:bg-[var(--df-light-gray)] transition-all font-bold text-[var(--df-black)] flex items-center justify-center gap-2 text-sm shadow-sm hover:translate-y-[-1px]">
+                  <FileUp className="w-4 h-4" />
                   <span className="hidden sm:inline">Bulk Upload</span>
                   <span className="sm:hidden">Bulk</span>
                 </button>
               </Link>
               <Link to="/upload" className="flex-1 sm:flex-initial">
-                <button className="w-full sm:w-auto px-4 sm:px-5 py-2.5 bg-[var(--df-lime)] hover:bg-[#7BC942] text-gray-900 rounded-xl font-semibold transition-colors shadow-sm flex items-center justify-center gap-2 text-sm sm:text-base">
-                  <Upload className="w-5 h-5" />
+                <button className="w-full sm:w-auto px-6 py-2.5 bg-[var(--df-lime)] text-[var(--df-black)] rounded-full hover:bg-[var(--df-lime-hover)] transition-all font-bold flex items-center justify-center gap-2 text-sm shadow-[0_4px_16px_rgba(138,224,74,0.3)] hover:translate-y-[-1px]">
+                  <Upload className="w-4 h-4" />
                   <span className="hidden sm:inline">Upload Invoice</span>
                   <span className="sm:hidden">Upload</span>
                 </button>
@@ -248,30 +248,19 @@ export default function DocumentsPage() {
                 animate={{ opacity: 1, y: 0 }}
                 className="grid grid-cols-1 md:grid-cols-4 gap-4"
               >
-                <div className="bg-white rounded-xl p-4 border border-gray-200">
-                  <p className="text-sm text-gray-600">Total Invoices</p>
-                  <p className="text-2xl font-bold text-gray-900 mt-1">
-                    {filteredInvoices.length}
-                  </p>
-                </div>
-                <div className="bg-white rounded-xl p-4 border border-gray-200">
-                  <p className="text-sm text-gray-600">Successful</p>
-                  <p className="text-2xl font-bold text-green-600 mt-1">
-                    {filteredInvoices.filter((i) => i.status === 'success').length}
-                  </p>
-                </div>
-                <div className="bg-white rounded-xl p-4 border border-gray-200">
-                  <p className="text-sm text-gray-600">Needs Review</p>
-                  <p className="text-2xl font-bold text-yellow-600 mt-1">
-                    {filteredInvoices.filter((i) => i.status === 'review').length}
-                  </p>
-                </div>
-                <div className="bg-white rounded-xl p-4 border border-gray-200">
-                  <p className="text-sm text-gray-600">Failed</p>
-                  <p className="text-2xl font-bold text-red-600 mt-1">
-                    {filteredInvoices.filter((i) => i.status === 'failed').length}
-                  </p>
-                </div>
+                {[
+                  { label: 'Total Invoices', value: filteredInvoices.length, color: '[var(--df-black)]' },
+                  { label: 'Successful', value: filteredInvoices.filter((i) => i.status === 'success').length, color: 'green-600' },
+                  { label: 'Needs Review', value: filteredInvoices.filter((i) => i.status === 'review').length, color: 'yellow-600' },
+                  { label: 'Failed', value: filteredInvoices.filter((i) => i.status === 'failed').length, color: 'red-600' },
+                ].map((stat, idx) => (
+                  <div key={idx} className="bg-white rounded-xl p-5 border-[1.5px] border-[var(--df-border)] shadow-[0_2px_16px_rgba(0,0,0,0.04)] transition-all hover:shadow-[0_4px_20px_rgba(0,0,0,0.06)] group">
+                    <p className="text-xs font-bold text-[var(--df-muted)] uppercase tracking-wider group-hover:text-[var(--df-navy)] transition-colors">{stat.label}</p>
+                    <p className={`text-3xl font-extrabold text-${stat.color} mt-2 tracking-tighter`}>
+                      {stat.value}
+                    </p>
+                  </div>
+                ))}
               </motion.div>
 
               {/* Invoice Table */}
