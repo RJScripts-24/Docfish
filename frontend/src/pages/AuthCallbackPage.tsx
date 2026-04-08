@@ -42,7 +42,8 @@ export default function AuthCallbackPage() {
       // If code lands on frontend callback (misconfigured provider callback),
       // forward it to backend callback for token exchange.
       if (code) {
-        const callbackUrl = `/api/v1/auth/google/callback${window.location.search}`;
+        const apiBaseUrl = (import.meta.env.VITE_API_BASE_URL || '').replace(/\/$/, '');
+        const callbackUrl = `${apiBaseUrl}/api/v1/auth/google/callback${window.location.search}`;
         window.location.replace(callbackUrl);
         return true;
       }
