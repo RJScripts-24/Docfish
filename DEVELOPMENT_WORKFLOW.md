@@ -271,6 +271,6 @@ This workflow showcases how AI tools can augment developer productivity while ma
 ---
 
 **Project:** Docfish  
-**Developer:** [Your Name]  
+**Developer:** Rishabh Kumar Jha 
 **Completion Date:** April 2026  
 **Total Development Time:** ~13 hours
