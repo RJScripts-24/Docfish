@@ -42,6 +42,9 @@ app.use(
 );
 app.use(
   helmet({
+    // We intentionally allow specific cross-origin framing via CSP frame-ancestors
+    // so the frontend can embed PDF previews served by this backend.
+    frameguard: false,
     contentSecurityPolicy: {
       directives: {
         frameAncestors,
