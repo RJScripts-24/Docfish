@@ -499,12 +499,12 @@ export default function DocumentReviewPage() {
         ) : null}
       </div>
 
-      <div className="flex-1 flex flex-col overflow-hidden">
-        <div className="h-1/2 border-b border-gray-200">
+      <div className="flex-1 flex overflow-hidden">
+        <div className="w-1/2 border-r border-gray-200">
           <PDFViewer documentUrl={document.documentUrl} />
         </div>
 
-        <div className="h-1/2">
+        <div className="w-1/2">
           <ExtractedDataPanel
             document={document}
             fields={fields}
