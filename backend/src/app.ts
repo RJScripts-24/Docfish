@@ -15,6 +15,9 @@ import { reprocessInvoice } from './controllers/document.controller';
 
 const app = express();
 
+// Respect x-forwarded-* headers when running behind Render/reverse proxies.
+app.set('trust proxy', 1);
+
 connectDB();
 
 const corsOrigins = process.env.CORS_ORIGIN

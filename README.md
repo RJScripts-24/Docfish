@@ -9,22 +9,22 @@ Docfish ingests invoice PDFs, extracts structured fields using AI, validates the
 ## Screenshots
 
 ### Landing Page
-![Landing Page](docs/images/Screenshot%202026-04-08%20045720.png)
+![Landing Page](docs/images/landing.png)
 
 ### Authentication
-![Authentication](docs/images/Screenshot%202026-04-08%20045839.png)
+![Authentication](docs/images/authentication.png)
 
 ### Dashboard
-![Dashboard](docs/images/Screenshot%202026-04-08%20045921.png)
+![Dashboard](docs/images/dashboard.png)
 
 ### Invoice List
-![Invoice List](docs/images/Screenshot%202026-04-08%20045803.png)
+![Invoice List](docs/images/invoice_list.png)
 
 ### Document Review
-![Document Review](docs/images/Screenshot%202026-04-08%20045907.png)
+![Document Review](docs/images/document_review.png)
 
 ### Prompt Management
-![Prompt Management](docs/images/Screenshot%202026-04-08%20045825.png)
+![Prompt Management](docs/images/prompt_management.png)
 
 ---
 

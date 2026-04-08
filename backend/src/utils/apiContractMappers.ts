@@ -149,13 +149,27 @@ const toValidationSeverity = (code: string | undefined) => {
 };
 
 export const buildDocumentUrl = (req: Request, doc: DocumentLike) => {
-  const filename = path.basename(doc.filePath || '');
+  const normalizedPath = String(doc.filePath || '').replace(/\\/g, '/');
+  const filename = path.posix.basename(normalizedPath);
 
   if (!filename) {
     return '';
   }
 
-  return `${req.protocol}://${req.get('host')}/uploads/${encodeURIComponent(filename)}`;
+  const publicBaseUrl = (process.env.PUBLIC_BASE_URL || '').replace(/\/$/, '');
+  if (publicBaseUrl) {
+    return `${publicBaseUrl}/uploads/${encodeURIComponent(filename)}`;
+  }
+
+  const forwardedProto = (req.get('x-forwarded-proto') || '').split(',')[0].trim();
+  const protocol = forwardedProto || req.protocol;
+  const host = req.get('host') || '';
+
+  if (!host) {
+    return `/uploads/${encodeURIComponent(filename)}`;
+  }
+
+  return `${protocol}://${host}/uploads/${encodeURIComponent(filename)}`;
 };
 
 export const toInvoiceDocument = (doc: DocumentLike) => {
